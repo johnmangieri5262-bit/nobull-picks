@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NoBull Picks</title>
+  <style>
+    :root {
+      --navy-dark: #0a0f1a;
+      --navy: #111827;
+      --navy-light: #1a2332;
+      --navy-lighter: #1f2937;
+      --red: #dc2626;
+      --red-hover: #ef4444;
+      --green: #10b981;
+      --green-dark: #059669;
+      --yellow: #f59e0b;
+      --blue: #3b82f6;
+      --purple: #8b5cf6;
+      --white: #f9fafb;
+      --gray: #9ca3af;
+      --gray-dark: #6b7280;
+      --border: #374151;
+      --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --font-mono: 'SF Mono', 'Fira Code', Consolas, monospace;
+      --radius: 8px;
+      --radius-lg: 12px;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: var(--font); background: var(--navy-dark); color: var(--white); min-height: 100vh; line-height: 1.5; }
+
+    .header { background: var(--navy); border-bottom: 2px solid var(--red); padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
+    .logo { display: flex; align-items: center; gap: 10px; font-size: 20px; font-weight: 700; }
+    .logo svg { flex-shrink: 0; }
+    .logo span { color: var(--red); }
+    .header-right { display: flex; align-items: center; gap: 12px; }
+    .user-badge { background: var(--navy-light); border: 1px solid var(--border); border-radius: var(--radius); padding: 6px 12px; font-size: 13px; color: var(--gray); display: none; }
+    .user-badge strong { color: var(--white); }
+
+    .nav { background: var(--navy); border-bottom: 1px solid var(--border); display: none; padding: 0 24px; overflow-x: auto; white-space: nowrap; }
+    .nav-tab { padding: 12px 18px; font-size: 13px; font-weight: 500; color: var(--gray); cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.15s; display: inline-block; }
+    .nav-tab:hover { color: var(--white); }
+    .nav-tab.active { color: var(--red); border-bottom-color: var(--red); }
+
+    .main { max-width: 1200px; margin: 0 auto; padding: 24px; display: none; }
+    .page { display: none; }
+    .page.active { display: block; }
+
+    .card { background: var(--navy); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 24px; margin-bottom: 20px; }
+    .card-title { font-size: 13px; font-weight: 600; color: var(--gray); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+    .card-title svg { color: var(--red); }
+
+    .status-banner { background: linear-gradient(135deg, var(--navy-light), var(--navy)); border: 1px solid var(--red); border-radius: var(--radius-lg); padding: 24px; margin-bottom: 24px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; }
+    .status-info h2 { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
+    .status-info p { color: var(--gray); font-size: 14px; }
+    .status-badge { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 100px; font-size: 12px; font-weight: 600; margin-top: 8px; }
+    .status-badge.drafting { background: rgba(245,158,11,0.15); color: var(--yellow); border: 1px solid var(--yellow); }
+    .status-badge.active { background: rgba(16,185,129,0.15); color: var(--green); border: 1px solid var(--green); }
+    .countdown .days { font-size: 36px; font-weight: 700; font-family: var(--font-mono); color: var(--red); text-align: right; }
+    .countdown .label { font-size: 12px; color: var(--gray); text-transform: uppercase; text-align: right; }
+
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 24px; }
+    .stat-card { background: var(--navy); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; text-align: center; }
+    .stat-value { font-size: 24px; font-weight: 700; font-family: var(--font-mono); }
+    .stat-label { font-size: 10px; color: var(--gray); text-transform: uppercase; letter-spacing: 0.05em; margin-top: 4px; }
+
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th { text-align: left; color: var(--gray); font-weight: 500; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; padding: 10px 12px; border-bottom: 1px solid var(--border); }
+    td { padding: 11px 12px; border-bottom: 1px solid rgba(55,65,81,0.5); }
+    tr:hover td { background: var(--navy-light); }
+    .rank { font-weight: 700; font-family: var(--font-mono); }
+    .rank-1 { color: #fbbf24; }
+    .rank-2 { color: #d1d5db; }
+    .rank-3 { color: #d97706; }
+    .positive { color: var(--green); }
+    .negative { color: var(--red); }
+    .mono { font-family: var(--font-mono); font-weight: 600; }
+
+    .picks-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+    .pick-card { background: var(--navy-light); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; display: flex; justify-content: space-between; align-items: center; transition: border-color 0.15s; }
+    .pick-card:hover { border-color: var(--gray-dark); }
+    .pick-ticker { font-weight: 700; font-size: 15px; font-family: var(--font-mono); }
+    .pick-name { font-size: 11px; color: var(--gray); margin-top: 2px; }
+    .pick-type { font-size: 9px; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; font-weight: 600; display: inline-block; margin-top: 4px; letter-spacing: 0.03em; }
+    .pick-type-stock { background: rgba(59,130,246,0.2); color: #60a5fa; }
+    .pick-type-etf { background: rgba(139,92,246,0.2); color: #a78bfa; }
+    .pick-type-crypto { background: rgba(245,158,11,0.2); color: #fbbf24; }
+    .pick-price { font-size: 11px; color: var(--gray); margin-top: 4px; }
+
+    .add-section { background: var(--navy-light); border: 1px dashed var(--border); border-radius: var(--radius); padding: 20px; margin-top: 16px; }
+    .search-wrap { position: relative; margin-bottom: 12px; }
+    input, select { background: var(--navy-dark); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 12px; color: var(--white); font-size: 14px; width: 100%; outline: none; }
+    input:focus, select:focus { border-color: var(--red); }
+    .search-results { position: absolute; top: 100%; left: 0; right: 0; background: var(--navy); border: 1px solid var(--border); border-radius: var(--radius); margin-top: 4px; max-height: 200px; overflow-y: auto; z-index: 50; display: none; }
+    .search-item { padding: 10px 14px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(55,65,81,0.3); }
+    .search-item:hover { background: var(--navy-light); }
+    .search-item:last-child { border-bottom: none; }
+
+    .btn { display: inline-flex; align-items: center; gap: 6px; padding: 10px 18px; border-radius: var(--radius); font-size: 13px; font-weight: 600; cursor: pointer; border: none; transition: all 0.15s; }
+    .btn-primary { background: var(--red); color: white; }
+    .btn-primary:hover { background: var(--red-hover); }
+    .btn-secondary { background: var(--navy-lighter); color: var(--white); border: 1px solid var(--border); }
+    .btn-secondary:hover { border-color: var(--gray-dark); }
+    .btn-sm { padding: 6px 12px; font-size: 12px; }
+    .btn-remove { background: transparent; color: var(--red); border: 1px solid rgba(220,38,38,0.4); padding: 4px 10px; font-size: 11px; border-radius: 4px; cursor: pointer; margin-top: 6px; }
+    .btn-remove:hover { background: var(--red); color: white; border-color: var(--red); }
+
+    .auth-page { display: flex; align-items: center; justify-content: center; min-height: calc(100vh - 60px); padding: 24px; }
+    .auth-card { background: var(--navy); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 40px; width: 100%; max-width: 400px; }
+    .auth-card h2 { font-size: 24px; margin-bottom: 8px; }
+    .auth-card .subtitle { color: var(--gray); margin-bottom: 24px; font-size: 14px; line-height: 1.6; }
+    .form-group { margin-bottom: 16px; }
+    .form-group label { display: block; font-size: 11px; font-weight: 500; color: var(--gray); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }
+
+    .history-item { display: flex; align-items: center; justify-content: space-between; padding: 14px 0; border-bottom: 1px solid rgba(55,65,81,0.4); flex-wrap: wrap; gap: 8px; }
+    .history-item:last-child { border-bottom: none; }
+
+    .rules-list { list-style: none; }
+    .rules-list li { padding: 12px 0; border-bottom: 1px solid rgba(55,65,81,0.3); font-size: 14px; color: var(--gray); line-height: 1.6; }
+    .rules-list li:last-child { border-bottom: none; }
+    .rules-list li strong { color: var(--white); }
+
+    .toast { position: fixed; bottom: 24px; right: 24px; background: var(--navy); border: 1px solid var(--green); border-radius: var(--radius); padding: 12px 20px; font-size: 13px; color: var(--green); z-index: 999; transform: translateY(100px); opacity: 0; transition: all 0.3s; pointer-events: none; }
+    .toast.show { transform: translateY(0); opacity: 1; }
+    .toast.error { border-color: var(--red); color: var(--red); }
+
+    .flex-row { display: flex; gap: 8px; align-items: center; }
+    .empty-state { text-align: center; padding: 40px; color: var(--gray); }
+    .empty-state svg { margin-bottom: 12px; opacity: 0.5; }
+
+    /* Portfolio Summary */
+    .portfolio-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 20px; padding: 16px; background: var(--navy-light); border-radius: var(--radius); border: 1px solid var(--border); }
+    .portfolio-stat { text-align: center; }
+    .portfolio-stat .val { font-size: 20px; font-weight: 700; font-family: var(--font-mono); }
+    .portfolio-stat .lbl { font-size: 10px; color: var(--gray); text-transform: uppercase; margin-top: 2px; }
+
+    /* Progress bar for leaderboard */
+    .perf-bar { height: 4px; background: var(--navy-lighter); border-radius: 2px; overflow: hidden; width: 80px; display: inline-block; vertical-align: middle; margin-left: 8px; }
+    .perf-bar-fill { height: 100%; border-radius: 2px; }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .header { padding: 12px 16px; }
+      .status-banner { flex-direction: column; text-align: center; }
+      .countdown .days, .countdown .label { text-align: center; }
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+      .picks-grid { grid-template-columns: 1fr; }
+      .main { padding: 16px; }
+      .portfolio-summary { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+</head>
+<body>
+
+<header class="header">
+  <div class="logo">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+    NoBull <span>Picks</span>
+  </div>
+  <div class="header-right">
+    <div class="user-badge" id="userBadge"><strong id="displayName"></strong></div>
+    <button class="btn btn-sm btn-secondary" id="logoutBtn" style="display:none;">Leave</button>
+  </div>
+</header>
+
+<nav class="nav" id="mainNav">
+  <div class="nav-tab active" data-page="dashboard">Leaderboard</div>
+  <div class="nav-tab" data-page="picks">My Picks</div>
+  <div class="nav-tab" data-page="history">History</div>
+  <div class="nav-tab" data-page="rules">Rules</div>
+</nav>
+
+<div class="auth-page" id="authPage">
+  <div class="auth-card">
+    <h2>NoBull <span style="color:var(--red);">Picks</span></h2>
+    <p class="subtitle">Fantasy stock picking competition. Pick 3-10 investments each quarter and compete for the best returns.</p>
+    <div class="form-group">
+      <label>Display Name</label>
+      <input type="text" id="authName" placeholder="e.g. Warren B." maxlength="20">
+    </div>
+    <div class="form-group">
+      <label>Invite Code</label>
+      <input type="text" id="authCode" placeholder="Enter invite code" value="NOBULL2026">
+    </div>
+    <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:8px;" id="joinBtn">Join Competition</button>
+    <p style="margin-top:16px;font-size:12px;text-align:center;color:var(--gray-dark);">Demo code: <strong style="color:var(--yellow);">NOBULL2026</strong></p>
+  </div>
+</div>
+
+<main class="main" id="mainContent">
+  <!-- DASHBOARD -->
+  <div class="page active" id="page-dashboard">
+    <div class="status-banner">
+      <div class="status-info">
+        <h2>Q3 2026 Competition</h2>
+        <p>July 1 - September 30, 2026</p>
+        <span class="status-badge drafting" id="compStatusBadge">Drafting Phase</span>
+      </div>
+      <div class="countdown">
+        <div class="days" id="countdownDays">--</div>
+        <div class="label" id="countdownLabel">Days until lock</div>
+      </div>
+    </div>
+    <div class="stats-grid" id="statsGrid"></div>
+    <div class="card">
+      <div class="card-title">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9H4.5a2.5 2.5 0 010-5C7 4 7 7 7 7"/><path d="M18 9h1.5a2.5 2.5 0 000-5C17 4 17 7 17 7"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0012 0V2Z"/></svg>
+        Leaderboard
+      </div>
+      <div style="overflow-x:auto;">
+        <table><thead><tr><th>Rank</th><th>Player</th><th>Return</th><th>Picks</th><th>Best Pick</th><th></th></tr></thead><tbody id="leaderboardBody"></tbody></table>
+      </div>
+    </div>
+  </div>
+
+  <!-- MY PICKS -->
+  <div class="page" id="page-picks">
+    <div class="card">
+      <div class="card-title">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+        My Portfolio (<span id="pickCount">0</span>/10 picks)
+      </div>
+      <div class="portfolio-summary" id="portfolioSummary" style="display:none;"></div>
+      <div class="picks-grid" id="picksGrid"></div>
+      <div class="add-section" id="addPickSection">
+        <div class="search-wrap">
+          <input type="text" id="tickerSearch" placeholder="Search ticker or name (e.g. AAPL, Bitcoin, SPY)..." autocomplete="off">
+          <div class="search-results" id="searchResults"></div>
+        </div>
+        <div class="flex-row">
+          <select id="pickType" style="max-width:130px;"><option value="stock">Stock</option><option value="etf">ETF</option><option value="crypto">Crypto</option></select>
+          <button class="btn btn-primary btn-sm" id="addPickBtn">+ Add Pick</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- HISTORY -->
+  <div class="page" id="page-history">
+    <div class="card">
+      <div class="card-title">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        Past Competitions
+      </div>
+      <div id="historyList"></div>
+    </div>
+  </div>
+
+  <!-- RULES -->
+  <div class="page" id="page-rules">
+    <div class="card">
+      <div class="card-title">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
+        Competition Rules
+      </div>
+      <ul class="rules-list">
+        <li><strong>Picks:</strong> Each player selects 3-10 investments (stocks, ETFs, or crypto).</li>
+        <li><strong>Drafting Period:</strong> 1 month before the competition starts, you can begin adding picks (minimum 1). Add, remove, or change picks freely until lock date.</li>
+        <li><strong>Lock Date:</strong> On competition start, all picks are frozen and entry prices are recorded at market close.</li>
+        <li><strong>Scoring:</strong> Equal-weighted average % return across all picks. If you pick 5 stocks, each counts for 20% of your total return.</li>
+        <li><strong>Quarterly Competitions:</strong> Each quarter (Q1-Q4) runs independently. Winners are crowned at quarter end.</li>
+        <li><strong>Yearly Championship:</strong> Your best 3 quarterly performances are averaged for the yearly leaderboard.</li>
+        <li><strong>Eligible Tickers:</strong> All US-listed stocks and ETFs. Top-50 crypto by market cap. No penny stocks under $1.</li>
+        <li><strong>Tie Breaker:</strong> Player with fewer picks wins (more concentrated = more conviction).</li>
+        <li><strong>Late Entry:</strong> Players can join mid-draft but must submit picks before lock date. No exceptions.</li>
+      </ul>
+    </div>
+  </div>
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script>
+var state = {
+  user: null,
+  picks: []
+};
+
+var competition = {
+  name: "Q3 2026",
+  start: "2026-07-01",
+  end: "2026-09-30",
+  status: "drafting"
+};
+
+var demoPlayers = [
+  { name: "Mike T.", picks: 7, returnPct: 8.42, bestPick: "NVDA +22.3%" },
+  { name: "Sarah K.", picks: 5, returnPct: 6.15, bestPick: "BTC +15.8%" },
+  { name: "James R.", picks: 10, returnPct: 4.87, bestPick: "AMZN +12.1%" },
+  { name: "Lisa M.", picks: 4, returnPct: 3.21, bestPick: "QQQ +8.7%" },
+  { name: "David H.", picks: 6, returnPct: 1.84, bestPick: "MSFT +6.2%" },
+  { name: "Alex P.", picks: 8, returnPct: 0.53, bestPick: "AAPL +4.1%" },
+  { name: "Chris W.", picks: 3, returnPct: -0.82, bestPick: "SPY +2.3%" },
+  { name: "Emma S.", picks: 5, returnPct: -1.43, bestPick: "TSLA +8.9%" },
+  { name: "Ryan D.", picks: 9, returnPct: -2.14, bestPick: "ETH +5.2%" },
+  { name: "Olivia N.", picks: 4, returnPct: -3.67, bestPick: "META +3.1%" }
+];
+
+var tickerDB = [
+  // ---- STOCKS (100+) ----
+  { symbol: "AAPL", name: "Apple Inc.", type: "stock", price: 198.50 },
+  { symbol: "MSFT", name: "Microsoft Corp.", type: "stock", price: 442.30 },
+  { symbol: "GOOGL", name: "Alphabet Inc.", type: "stock", price: 178.90 },
+  { symbol: "AMZN", name: "Amazon.com Inc.", type: "stock", price: 192.45 },
+  { symbol: "NVDA", name: "NVIDIA Corp.", type: "stock", price: 135.60 },
+  { symbol: "TSLA", name: "Tesla Inc.", type: "stock", price: 248.75 },
+  { symbol: "META", name: "Meta Platforms", type: "stock", price: 512.80 },
+  { symbol: "NFLX", name: "Netflix Inc.", type: "stock", price: 725.40 },
+  { symbol: "AMD", name: "Advanced Micro Devices", type: "stock", price: 164.20 },
+  { symbol: "JPM", name: "JPMorgan Chase", type: "stock", price: 215.60 },
+  { symbol: "V", name: "Visa Inc.", type: "stock", price: 298.30 },
+  { symbol: "MA", name: "Mastercard Inc.", type: "stock", price: 478.20 },
+  { symbol: "JNJ", name: "Johnson and Johnson", type: "stock", price: 155.80 },
+  { symbol: "WMT", name: "Walmart Inc.", type: "stock", price: 92.45 },
+  { symbol: "PG", name: "Procter and Gamble", type: "stock", price: 168.40 },
+  { symbol: "HD", name: "Home Depot", type: "stock", price: 378.90 },
+  { symbol: "DIS", name: "Walt Disney Co.", type: "stock", price: 112.30 },
+  { symbol: "COST", name: "Costco Wholesale", type: "stock", price: 912.50 },
+  { symbol: "PLTR", name: "Palantir Technologies", type: "stock", price: 118.40 },
+  { symbol: "COIN", name: "Coinbase Global", type: "stock", price: 265.20 },
+  { symbol: "SHOP", name: "Shopify Inc.", type: "stock", price: 108.60 },
+  { symbol: "CRM", name: "Salesforce Inc.", type: "stock", price: 268.40 },
+  { symbol: "ORCL", name: "Oracle Corp.", type: "stock", price: 142.80 },
+  { symbol: "ADBE", name: "Adobe Inc.", type: "stock", price: 485.60 },
+  { symbol: "INTC", name: "Intel Corp.", type: "stock", price: 32.40 },
+  { symbol: "CSCO", name: "Cisco Systems", type: "stock", price: 52.80 },
+  { symbol: "AVGO", name: "Broadcom Inc.", type: "stock", price: 168.50 },
+  { symbol: "PEP", name: "PepsiCo Inc.", type: "stock", price: 172.30 },
+  { symbol: "KO", name: "Coca-Cola Co.", type: "stock", price: 62.40 },
+  { symbol: "MCD", name: "McDonalds Corp.", type: "stock", price: 292.10 },
+  { symbol: "NKE", name: "Nike Inc.", type: "stock", price: 98.60 },
+  { symbol: "SBUX", name: "Starbucks Corp.", type: "stock", price: 102.40 },
+  { symbol: "BA", name: "Boeing Co.", type: "stock", price: 215.80 },
+  { symbol: "GS", name: "Goldman Sachs", type: "stock", price: 468.20 },
+  { symbol: "MS", name: "Morgan Stanley", type: "stock", price: 98.60 },
+  { symbol: "BLK", name: "BlackRock Inc.", type: "stock", price: 812.40 },
+  { symbol: "SCHW", name: "Charles Schwab", type: "stock", price: 74.20 },
+  { symbol: "AXP", name: "American Express", type: "stock", price: 235.80 },
+  { symbol: "UNH", name: "UnitedHealth Group", type: "stock", price: 528.40 },
+  { symbol: "PFE", name: "Pfizer Inc.", type: "stock", price: 28.60 },
+  { symbol: "MRK", name: "Merck and Co.", type: "stock", price: 128.40 },
+  { symbol: "ABBV", name: "AbbVie Inc.", type: "stock", price: 178.20 },
+  { symbol: "LLY", name: "Eli Lilly and Co.", type: "stock", price: 782.40 },
+  { symbol: "TMO", name: "Thermo Fisher Scientific", type: "stock", price: 568.20 },
+  { symbol: "UPS", name: "United Parcel Service", type: "stock", price: 148.60 },
+  { symbol: "FDX", name: "FedEx Corp.", type: "stock", price: 268.40 },
+  { symbol: "CAT", name: "Caterpillar Inc.", type: "stock", price: 342.80 },
+  { symbol: "DE", name: "Deere and Co.", type: "stock", price: 412.60 },
+  { symbol: "GE", name: "GE Aerospace", type: "stock", price: 168.40 },
+  { symbol: "LMT", name: "Lockheed Martin", type: "stock", price: 468.20 },
+  { symbol: "RTX", name: "RTX Corp.", type: "stock", price: 108.40 },
+  { symbol: "NEE", name: "NextEra Energy", type: "stock", price: 72.80 },
+  { symbol: "XOM", name: "Exxon Mobil", type: "stock", price: 108.60 },
+  { symbol: "CVX", name: "Chevron Corp.", type: "stock", price: 158.40 },
+  { symbol: "COP", name: "ConocoPhillips", type: "stock", price: 112.80 },
+  { symbol: "SLB", name: "Schlumberger Ltd.", type: "stock", price: 48.60 },
+  { symbol: "T", name: "AT&T Inc.", type: "stock", price: 18.40 },
+  { symbol: "VZ", name: "Verizon Communications", type: "stock", price: 42.80 },
+  { symbol: "TMUS", name: "T-Mobile US", type: "stock", price: 178.60 },
+  { symbol: "ABNB", name: "Airbnb Inc.", type: "stock", price: 148.20 },
+  { symbol: "UBER", name: "Uber Technologies", type: "stock", price: 72.40 },
+  { symbol: "LYFT", name: "Lyft Inc.", type: "stock", price: 16.80 },
+  { symbol: "SQ", name: "Block Inc.", type: "stock", price: 68.40 },
+  { symbol: "PYPL", name: "PayPal Holdings", type: "stock", price: 62.80 },
+  { symbol: "ROKU", name: "Roku Inc.", type: "stock", price: 68.20 },
+  { symbol: "SNAP", name: "Snap Inc.", type: "stock", price: 12.40 },
+  { symbol: "PINS", name: "Pinterest Inc.", type: "stock", price: 32.80 },
+  { symbol: "RBLX", name: "Roblox Corp.", type: "stock", price: 42.60 },
+  { symbol: "U", name: "Unity Software", type: "stock", price: 28.40 },
+  { symbol: "CRWD", name: "CrowdStrike Holdings", type: "stock", price: 298.60 },
+  { symbol: "PANW", name: "Palo Alto Networks", type: "stock", price: 312.40 },
+  { symbol: "ZS", name: "Zscaler Inc.", type: "stock", price: 218.80 },
+  { symbol: "DDOG", name: "Datadog Inc.", type: "stock", price: 128.40 },
+  { symbol: "SNOW", name: "Snowflake Inc.", type: "stock", price: 168.20 },
+  { symbol: "MDB", name: "MongoDB Inc.", type: "stock", price: 278.60 },
+  { symbol: "NET", name: "Cloudflare Inc.", type: "stock", price: 88.40 },
+  { symbol: "TEAM", name: "Atlassian Corp.", type: "stock", price: 228.60 },
+  { symbol: "ZM", name: "Zoom Video", type: "stock", price: 68.40 },
+  { symbol: "DOCU", name: "DocuSign Inc.", type: "stock", price: 58.20 },
+  { symbol: "TTD", name: "The Trade Desk", type: "stock", price: 88.60 },
+  { symbol: "MELI", name: "MercadoLibre Inc.", type: "stock", price: 1648.20 },
+  { symbol: "SE", name: "Sea Limited", type: "stock", price: 48.40 },
+  { symbol: "BABA", name: "Alibaba Group", type: "stock", price: 82.60 },
+  { symbol: "JD", name: "JD.com Inc.", type: "stock", price: 28.40 },
+  { symbol: "NIO", name: "NIO Inc.", type: "stock", price: 8.20 },
+  { symbol: "RIVN", name: "Rivian Automotive", type: "stock", price: 18.40 },
+  { symbol: "LCID", name: "Lucid Group", type: "stock", price: 4.80 },
+  { symbol: "F", name: "Ford Motor Co.", type: "stock", price: 12.40 },
+  { symbol: "GM", name: "General Motors", type: "stock", price: 38.60 },
+  { symbol: "TM", name: "Toyota Motor", type: "stock", price: 188.40 },
+  { symbol: "SOFI", name: "SoFi Technologies", type: "stock", price: 8.60 },
+  { symbol: "HOOD", name: "Robinhood Markets", type: "stock", price: 12.80 },
+  { symbol: "AFRM", name: "Affirm Holdings", type: "stock", price: 32.40 },
+  { symbol: "PATH", name: "UiPath Inc.", type: "stock", price: 18.60 },
+  { symbol: "AI", name: "C3.ai Inc.", type: "stock", price: 28.40 },
+  { symbol: "SMCI", name: "Super Micro Computer", type: "stock", price: 42.80 },
+  { symbol: "ARM", name: "Arm Holdings", type: "stock", price: 148.60 },
+  { symbol: "IONQ", name: "IonQ Inc.", type: "stock", price: 18.20 },
+  { symbol: "RGTI", name: "Rigetti Computing", type: "stock", price: 2.40 },
+  { symbol: "TSM", name: "Taiwan Semiconductor", type: "stock", price: 142.80 },
+  { symbol: "ASML", name: "ASML Holding", type: "stock", price: 698.40 },
+  { symbol: "MU", name: "Micron Technology", type: "stock", price: 72.60 },
+  { symbol: "QCOM", name: "Qualcomm Inc.", type: "stock", price: 162.40 },
+  { symbol: "TXN", name: "Texas Instruments", type: "stock", price: 172.80 },
+  { symbol: "LRCX", name: "Lam Research", type: "stock", price: 682.40 },
+  { symbol: "AMAT", name: "Applied Materials", type: "stock", price: 158.60 },
+  { symbol: "NOW", name: "ServiceNow Inc.", type: "stock", price: 712.40 },
+  { symbol: "INTU", name: "Intuit Inc.", type: "stock", price: 628.20 },
+  { symbol: "WDAY", name: "Workday Inc.", type: "stock", price: 248.40 },
+  // ---- ETFs ----
+  { symbol: "SPY", name: "SPDR S&P 500 ETF", type: "etf", price: 545.20 },
+  { symbol: "QQQ", name: "Invesco Nasdaq-100 ETF", type: "etf", price: 485.60 },
+  { symbol: "IWM", name: "iShares Russell 2000", type: "etf", price: 224.80 },
+  { symbol: "DIA", name: "SPDR Dow Jones ETF", type: "etf", price: 398.40 },
+  { symbol: "VTI", name: "Vanguard Total Market", type: "etf", price: 278.90 },
+  { symbol: "VOO", name: "Vanguard S&P 500", type: "etf", price: 502.40 },
+  { symbol: "VGT", name: "Vanguard Info Tech", type: "etf", price: 518.60 },
+  { symbol: "ARKK", name: "ARK Innovation ETF", type: "etf", price: 58.40 },
+  { symbol: "ARKG", name: "ARK Genomic Revolution", type: "etf", price: 32.80 },
+  { symbol: "XLF", name: "Financial Select Sector", type: "etf", price: 44.20 },
+  { symbol: "XLE", name: "Energy Select Sector", type: "etf", price: 87.30 },
+  { symbol: "XLK", name: "Technology Select Sector", type: "etf", price: 198.40 },
+  { symbol: "XLV", name: "Health Care Select Sector", type: "etf", price: 142.80 },
+  { symbol: "XLI", name: "Industrial Select Sector", type: "etf", price: 118.60 },
+  { symbol: "XLP", name: "Consumer Staples Select", type: "etf", price: 78.40 },
+  { symbol: "XLY", name: "Consumer Discretionary", type: "etf", price: 182.20 },
+  { symbol: "SOXX", name: "iShares Semiconductor", type: "etf", price: 232.50 },
+  { symbol: "SMH", name: "VanEck Semiconductor", type: "etf", price: 248.60 },
+  { symbol: "TAN", name: "Invesco Solar ETF", type: "etf", price: 42.80 },
+  { symbol: "ICLN", name: "iShares Clean Energy", type: "etf", price: 14.60 },
+  { symbol: "GLD", name: "SPDR Gold Shares", type: "etf", price: 218.40 },
+  { symbol: "SLV", name: "iShares Silver Trust", type: "etf", price: 24.80 },
+  { symbol: "TLT", name: "iShares 20+ Year Treasury", type: "etf", price: 98.40 },
+  { symbol: "HYG", name: "iShares High Yield Bond", type: "etf", price: 78.20 },
+  { symbol: "EEM", name: "iShares Emerging Markets", type: "etf", price: 42.60 },
+  { symbol: "VWO", name: "Vanguard Emerging Markets", type: "etf", price: 44.80 },
+  { symbol: "KWEB", name: "KraneShares China Internet", type: "etf", price: 28.40 },
+  { symbol: "JETS", name: "US Global Jets ETF", type: "etf", price: 18.60 },
+  { symbol: "BITO", name: "ProShares Bitcoin Strategy", type: "etf", price: 28.40 },
+  // ---- CRYPTO ----
+  { symbol: "BTC", name: "Bitcoin", type: "crypto", price: 104250.00 },
+  { symbol: "ETH", name: "Ethereum", type: "crypto", price: 3845.00 },
+  { symbol: "SOL", name: "Solana", type: "crypto", price: 172.40 },
+  { symbol: "BNB", name: "Binance Coin", type: "crypto", price: 612.80 },
+  { symbol: "XRP", name: "Ripple", type: "crypto", price: 2.34 },
+  { symbol: "ADA", name: "Cardano", type: "crypto", price: 0.82 },
+  { symbol: "DOGE", name: "Dogecoin", type: "crypto", price: 0.18 },
+  { symbol: "AVAX", name: "Avalanche", type: "crypto", price: 38.60 },
+  { symbol: "DOT", name: "Polkadot", type: "crypto", price: 7.85 },
+  { symbol: "LINK", name: "Chainlink", type: "crypto", price: 18.20 },
+  { symbol: "MATIC", name: "Polygon", type: "crypto", price: 0.72 },
+  { symbol: "UNI", name: "Uniswap", type: "crypto", price: 8.40 },
+  { symbol: "ATOM", name: "Cosmos", type: "crypto", price: 9.80 },
+  { symbol: "FIL", name: "Filecoin", type: "crypto", price: 5.60 },
+  { symbol: "APT", name: "Aptos", type: "crypto", price: 8.40 },
+  { symbol: "ARB", name: "Arbitrum", type: "crypto", price: 1.12 },
+  { symbol: "OP", name: "Optimism", type: "crypto", price: 2.48 },
+  { symbol: "SUI", name: "Sui", type: "crypto", price: 1.68 },
+  { symbol: "NEAR", name: "NEAR Protocol", type: "crypto", price: 4.20 },
+  { symbol: "INJ", name: "Injective", type: "crypto", price: 28.40 },
+  { symbol: "RENDER", name: "Render Token", type: "crypto", price: 4.80 },
+  { symbol: "FET", name: "Fetch.ai", type: "crypto", price: 0.68 },
+  { symbol: "PEPE", name: "Pepe", type: "crypto", price: 0.0000012 },
+  { symbol: "SHIB", name: "Shiba Inu", type: "crypto", price: 0.0000098 },
+  { symbol: "WIF", name: "dogwifhat", type: "crypto", price: 2.40 }
+];
+
+var selectedTicker = null;
+
+function init() {
+  renderLeaderboard();
+  renderHistory();
+  renderStats();
+  setupNav();
+  updateCountdown();
+  setupEvents();
+}
+
+function setupEvents() {
+  document.getElementById("joinBtn").addEventListener("click", joinCompetition);
+  document.getElementById("logoutBtn").addEventListener("click", logout);
+  document.getElementById("addPickBtn").addEventListener("click", addPick);
+  document.getElementById("tickerSearch").addEventListener("input", function(e) {
+    searchTicker(e.target.value);
+  });
+  document.getElementById("tickerSearch").addEventListener("keydown", function(e) {
+    if (e.key === "Enter") { addPick(); }
+  });
+  document.addEventListener("click", function(e) {
+    if (!e.target.closest(".search-wrap")) {
+      document.getElementById("searchResults").style.display = "none";
+    }
+  });
+}
+
+function joinCompetition() {
+  var name = document.getElementById("authName").value.trim();
+  var code = document.getElementById("authCode").value.trim().toUpperCase();
+  if (!name) { showToast("Please enter your name", true); return; }
+  if (code !== "NOBULL2026") { showToast("Invalid invite code", true); return; }
+  state.user = { name: name, joinedAt: new Date().toISOString() };
+  showApp();
+  showToast("Welcome, " + name + "! Head to My Picks to start building your portfolio.");
+}
+
+function logout() {
+  state.user = null;
+  state.picks = [];
+  document.getElementById("authPage").style.display = "flex";
+  document.getElementById("mainContent").style.display = "none";
+  document.getElementById("mainNav").style.display = "none";
+  document.getElementById("userBadge").style.display = "none";
+  document.getElementById("logoutBtn").style.display = "none";
+}
+
+function showApp() {
+  document.getElementById("authPage").style.display = "none";
+  document.getElementById("mainContent").style.display = "block";
+  document.getElementById("mainNav").style.display = "block";
+  document.getElementById("userBadge").style.display = "inline-block";
+  document.getElementById("logoutBtn").style.display = "inline-flex";
+  document.getElementById("displayName").textContent = state.user.name;
+  renderPicks();
+  renderLeaderboard();
+}
+
+function setupNav() {
+  var tabs = document.querySelectorAll(".nav-tab");
+  for (var i = 0; i < tabs.length; i++) {
+    (function(tab) {
+      tab.addEventListener("click", function() {
+        var allTabs = document.querySelectorAll(".nav-tab");
+        var allPages = document.querySelectorAll(".page");
+        for (var j = 0; j < allTabs.length; j++) allTabs[j].classList.remove("active");
+        for (var j = 0; j < allPages.length; j++) allPages[j].classList.remove("active");
+        tab.classList.add("active");
+        var pageId = "page-" + tab.getAttribute("data-page");
+        document.getElementById(pageId).classList.add("active");
+      });
+    })(tabs[i]);
+  }
+}
+
+function renderStats() {
+  var totalPicks = 0;
+  var bestReturn = -Infinity;
+  var worstReturn = Infinity;
+  var totalReturn = 0;
+  for (var i = 0; i < demoPlayers.length; i++) {
+    totalPicks += demoPlayers[i].picks;
+    if (demoPlayers[i].returnPct > bestReturn) bestReturn = demoPlayers[i].returnPct;
+    if (demoPlayers[i].returnPct < worstReturn) worstReturn = demoPlayers[i].returnPct;
+    totalReturn += demoPlayers[i].returnPct;
+  }
+  var avgReturn = totalReturn / demoPlayers.length;
+  var html = "";
+  html += "<div class=\"stat-card\"><div class=\"stat-value\" style=\"color:var(--white);\">" + demoPlayers.length + "</div><div class=\"stat-label\">Players</div></div>";
+  html += "<div class=\"stat-card\"><div class=\"stat-value positive\">+" + bestReturn.toFixed(1) + "%</div><div class=\"stat-label\">Best Return</div></div>";
+  html += "<div class=\"stat-card\"><div class=\"stat-value\" style=\"color:var(--yellow);\">" + totalPicks + "</div><div class=\"stat-label\">Total Picks</div></div>";
+  html += "<div class=\"stat-card\"><div class=\"stat-value negative\">" + avgReturn.toFixed(1) + "%</div><div class=\"stat-label\">Avg Return</div></div>";
+  document.getElementById("statsGrid").innerHTML = html;
+}
+
+function renderLeaderboard() {
+  var tbody = document.getElementById("leaderboardBody");
+  var players = demoPlayers.slice();
+
+  if (state.user && state.picks.length > 0) {
+    var userReturn = 0;
+    var best = { sym: "", ret: -Infinity };
+    for (var i = 0; i < state.picks.length; i++) {
+      userReturn += state.picks[i].returnPct;
+      if (state.picks[i].returnPct > best.ret) {
+        best.sym = state.picks[i].symbol;
+        best.ret = state.picks[i].returnPct;
+      }
+    }
+    userReturn = userReturn / state.picks.length;
+    players.push({
+      name: state.user.name + " (You)",
+      picks: state.picks.length,
+      returnPct: userReturn,
+      bestPick: best.sym + " +" + best.ret.toFixed(1) + "%",
+      isUser: true
+    });
+  }
+
+  players.sort(function(a, b) { return b.returnPct - a.returnPct; });
+
+  var maxAbs = 1;
+  for (var i = 0; i < players.length; i++) {
+    if (Math.abs(players[i].returnPct) > maxAbs) maxAbs = Math.abs(players[i].returnPct);
+  }
+
+  var html = "";
+  for (var i = 0; i < players.length; i++) {
+    var p = players[i];
+    var rankClass = i < 3 ? " rank-" + (i + 1) : "";
+    var retClass = p.returnPct >= 0 ? "positive" : "negative";
+    var retStr = (p.returnPct >= 0 ? "+" : "") + p.returnPct.toFixed(2) + "%";
+    var barWidth = Math.round(Math.abs(p.returnPct) / maxAbs * 100);
+    var barColor = p.returnPct >= 0 ? "var(--green)" : "var(--red)";
+    var rowStyle = p.isUser ? " style=\"background:rgba(220,38,38,0.06);\"" : "";
+    html += "<tr" + rowStyle + ">";
+    html += "<td class=\"rank" + rankClass + "\">" + (i + 1) + "</td>";
+    html += "<td style=\"font-weight:600;\">" + p.name + "</td>";
+    html += "<td class=\"mono " + retClass + "\">" + retStr + "</td>";
+    html += "<td style=\"color:var(--gray);font-size:12px;\">" + p.picks + "</td>";
+    html += "<td style=\"color:var(--gray);font-size:11px;\">" + p.bestPick + "</td>";
+    html += "<td><div class=\"perf-bar\"><div class=\"perf-bar-fill\" style=\"width:" + barWidth + "%;background:" + barColor + ";\"></div></div></td>";
+    html += "</tr>";
+  }
+  tbody.innerHTML = html;
+}
+
+function renderPicks() {
+  var grid = document.getElementById("picksGrid");
+  var summary = document.getElementById("portfolioSummary");
+  document.getElementById("pickCount").textContent = state.picks.length;
+
+  if (state.picks.length === 0) {
+    summary.style.display = "none";
+    grid.innerHTML = "<div class=\"empty-state\"><svg width=\"40\" height=\"40\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\"><path d=\"M21 12a9 9 0 11-18 0 9 9 0 0118 0z\"/><path d=\"M9 12h6\"/><path d=\"M12 9v6\"/></svg><div>No picks yet. Search for a ticker below to build your portfolio.</div></div>";
+    document.getElementById("addPickSection").style.display = "block";
+    return;
+  }
+
+  // Portfolio summary
+  var totalRet = 0;
+  var bestPick = { sym: "", ret: -Infinity };
+  var worstPick = { sym: "", ret: Infinity };
+  for (var i = 0; i < state.picks.length; i++) {
+    var r = state.picks[i].returnPct;
+    totalRet += r;
+    if (r > bestPick.ret) { bestPick.sym = state.picks[i].symbol; bestPick.ret = r; }
+    if (r < worstPick.ret) { worstPick.sym = state.picks[i].symbol; worstPick.ret = r; }
+  }
+  var avgRet = totalRet / state.picks.length;
+  var avgClass = avgRet >= 0 ? "positive" : "negative";
+  var avgStr = (avgRet >= 0 ? "+" : "") + avgRet.toFixed(2) + "%";
+  var bestClass = bestPick.ret >= 0 ? "positive" : "negative";
+  var worstClass = worstPick.ret >= 0 ? "positive" : "negative";
+
+  summary.style.display = "grid";
+  summary.innerHTML = "<div class=\"portfolio-stat\"><div class=\"val " + avgClass + "\">" + avgStr + "</div><div class=\"lbl\">Avg Return</div></div>" +
+    "<div class=\"portfolio-stat\"><div class=\"val positive\">" + bestPick.sym + "</div><div class=\"lbl\">Best +" + bestPick.ret.toFixed(1) + "%</div></div>" +
+    "<div class=\"portfolio-stat\"><div class=\"val negative\">" + worstPick.sym + "</div><div class=\"lbl\">Worst " + worstPick.ret.toFixed(1) + "%</div></div>" +
+    "<div class=\"portfolio-stat\"><div class=\"val\" style=\"color:var(--white);\">" + state.picks.length + "</div><div class=\"lbl\">Total Picks</div></div>";
+
+  // Pick cards
+  var html = "";
+  for (var i = 0; i < state.picks.length; i++) {
+    var pick = state.picks[i];
+    var retClass = pick.returnPct >= 0 ? "positive" : "negative";
+    var retStr = (pick.returnPct >= 0 ? "+" : "") + pick.returnPct.toFixed(1) + "%";
+    var currentPrice = pick.entryPrice * (1 + pick.returnPct / 100);
+    html += "<div class=\"pick-card\"><div>";
+    html += "<div class=\"pick-ticker\">" + pick.symbol + "</div>";
+    html += "<div class=\"pick-name\">" + pick.name + "</div>";
+    html += "<span class=\"pick-type pick-type-" + pick.type + "\">" + pick.type + "</span>";
+    html += "</div><div style=\"text-align:right;\">";
+    html += "<div class=\"mono " + retClass + "\" style=\"font-size:17px;\">" + retStr + "</div>";
+    html += "<div class=\"pick-price\">$" + pick.entryPrice.toFixed(2) + " &rarr; $" + currentPrice.toFixed(2) + "</div>";
+    html += "<button class=\"btn-remove\" data-idx=\"" + i + "\">Remove</button>";
+    html += "</div></div>";
+  }
+  grid.innerHTML = html;
+  document.getElementById("addPickSection").style.display = state.picks.length >= 10 ? "none" : "block";
+
+  // Attach remove handlers
+  var removeBtns = grid.querySelectorAll(".btn-remove");
+  for (var i = 0; i < removeBtns.length; i++) {
+    (function(btn) {
+      btn.addEventListener("click", function() {
+        removePick(parseInt(btn.getAttribute("data-idx")));
+      });
+    })(removeBtns[i]);
+  }
+}
+
+function searchTicker(query) {
+  var results = document.getElementById("searchResults");
+  if (query.length < 1) { results.style.display = "none"; return; }
+  var q = query.toUpperCase();
+  var matches = [];
+  for (var i = 0; i < tickerDB.length; i++) {
+    var t = tickerDB[i];
+    if (t.symbol.indexOf(q) !== -1 || t.name.toUpperCase().indexOf(q) !== -1) {
+      matches.push(t);
+    }
+    if (matches.length >= 6) break;
+  }
+  if (matches.length === 0) {
+    results.innerHTML = "<div style=\"padding:12px;color:var(--gray);font-size:13px;\">No match found. You can still type a custom ticker.</div>";
+    results.style.display = "block";
+    return;
+  }
+  var html = "";
+  for (var i = 0; i < matches.length; i++) {
+    var t = matches[i];
+    html += "<div class=\"search-item\" data-idx=\"" + i + "\">";
+    html += "<div><strong style=\"font-family:var(--font-mono);\">" + t.symbol + "</strong>";
+    html += " <span style=\"color:var(--gray);font-size:12px;\">" + t.name + "</span></div>";
+    html += "<span class=\"pick-type pick-type-" + t.type + "\" style=\"font-size:9px;\">" + t.type + "</span></div>";
+  }
+  results.innerHTML = html;
+  results.style.display = "block";
+
+  // Attach click handlers
+  var items = results.querySelectorAll(".search-item");
+  for (var i = 0; i < items.length; i++) {
+    (function(item, match) {
+      item.addEventListener("click", function() {
+        selectedTicker = match;
+        document.getElementById("tickerSearch").value = match.symbol;
+        document.getElementById("pickType").value = match.type;
+        document.getElementById("searchResults").style.display = "none";
+      });
+    })(items[i], matches[i]);
+  }
+}
+
+function addPick() {
+  if (state.picks.length >= 10) { showToast("Maximum 10 picks reached!", true); return; }
+  var input = document.getElementById("tickerSearch");
+  var symbol, name, type, entryPrice;
+
+  if (selectedTicker) {
+    symbol = selectedTicker.symbol;
+    name = selectedTicker.name;
+    type = selectedTicker.type;
+    entryPrice = selectedTicker.price;
+  } else {
+    symbol = input.value.toUpperCase().trim();
+    name = symbol;
+    type = document.getElementById("pickType").value;
+    entryPrice = parseFloat((Math.random() * 300 + 20).toFixed(2));
+  }
+
+  if (!symbol) { showToast("Enter a ticker symbol", true); return; }
+  for (var i = 0; i < state.picks.length; i++) {
+    if (state.picks[i].symbol === symbol) { showToast("Already picked " + symbol, true); return; }
+  }
+
+  // Simulate return (random for demo)
+  var returnPct = parseFloat((Math.random() * 24 - 6).toFixed(2));
+
+  state.picks.push({
+    symbol: symbol,
+    name: name,
+    type: type,
+    entryPrice: entryPrice,
+    returnPct: returnPct,
+    addedAt: new Date().toISOString()
+  });
+
+  input.value = "";
+  selectedTicker = null;
+  renderPicks();
+  renderLeaderboard();
+  showToast("Added " + symbol + " to your portfolio!");
+}
+
+function removePick(idx) {
+  var removed = state.picks.splice(idx, 1)[0];
+  renderPicks();
+  renderLeaderboard();
+  showToast("Removed " + removed.symbol);
+}
+
+function renderHistory() {
+  var list = document.getElementById("historyList");
+  var history = [
+    { name: "Q2 2026", dates: "Apr 1 - Jun 30", winner: "Mike T.", winRet: "+12.7%", your: "+4.2%", rank: "5th" },
+    { name: "Q1 2026", dates: "Jan 1 - Mar 31", winner: "Sarah K.", winRet: "+9.3%", your: "+6.8%", rank: "3rd" },
+    { name: "Q4 2025", dates: "Oct 1 - Dec 31", winner: "James R.", winRet: "+15.1%", your: "+2.1%", rank: "8th" },
+    { name: "2025 Yearly", dates: "Full Year", winner: "Mike T.", winRet: "+18.4%", your: "+8.9%", rank: "4th" }
+  ];
+  var html = "";
+  for (var i = 0; i < history.length; i++) {
+    var h = history[i];
+    html += "<div class=\"history-item\">";
+    html += "<div><div style=\"font-weight:600;\">" + h.name + "</div><div style=\"font-size:12px;color:var(--gray);\">" + h.dates + "</div></div>";
+    html += "<div style=\"text-align:center;\"><div style=\"font-size:11px;color:var(--gray);\">Winner</div><div style=\"font-weight:600;font-size:13px;\">" + h.winner + "</div><div class=\"positive\" style=\"font-size:12px;font-family:var(--font-mono);\">" + h.winRet + "</div></div>";
+    html += "<div style=\"text-align:right;\"><div style=\"font-size:11px;color:var(--gray);\">You</div><div class=\"positive\" style=\"font-size:13px;font-family:var(--font-mono);\">" + h.your + "</div><div style=\"font-size:12px;color:var(--yellow);\">" + h.rank + "</div></div>";
+    html += "</div>";
+  }
+  list.innerHTML = html;
+}
+
+function updateCountdown() {
+  var lockDate = new Date(competition.start);
+  var now = new Date();
+  var diff = Math.ceil((lockDate - now) / (1000 * 60 * 60 * 24));
+  if (diff > 0) {
+    document.getElementById("countdownDays").textContent = diff;
+    document.getElementById("countdownLabel").textContent = "Days until lock";
+  } else {
+    document.getElementById("countdownDays").textContent = "LIVE";
+    document.getElementById("countdownLabel").textContent = "Competition active";
+    document.getElementById("compStatusBadge").textContent = "Active";
+    document.getElementById("compStatusBadge").className = "status-badge active";
+  }
+}
+
+function showToast(msg, isError) {
+  var toast = document.getElementById("toast");
+  toast.textContent = msg;
+  toast.className = "toast show" + (isError ? " error" : "");
+  setTimeout(function() { toast.className = "toast"; }, 3000);
+}
+
+init();
+</script>
+</body>
+</html>

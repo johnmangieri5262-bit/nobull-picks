@@ -1,0 +1,9 @@
+node_modules
+server/node_modules
+server/data
+.env
+*.db
+.git
+.gitignore
+README.md
+index.html

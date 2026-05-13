@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NoBull Picks — Admin</title>
+  <style>
+    :root {
+      --navy-dark: #0a0f1a;
+      --navy: #111827;
+      --navy-light: #1a2332;
+      --navy-lighter: #1f2937;
+      --red: #dc2626;
+      --red-hover: #ef4444;
+      --green: #10b981;
+      --yellow: #f59e0b;
+      --blue: #3b82f6;
+      --purple: #8b5cf6;
+      --white: #f9fafb;
+      --gray: #9ca3af;
+      --gray-dark: #6b7280;
+      --border: #374151;
+      --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --font-mono: 'SF Mono', 'Fira Code', Consolas, monospace;
+      --radius: 8px;
+      --radius-lg: 12px;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: var(--font); background: var(--navy-dark); color: var(--white); min-height: 100vh; line-height: 1.5; }
+
+    .header { background: var(--navy); border-bottom: 2px solid var(--red); padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; }
+    .logo { display: flex; align-items: center; gap: 10px; font-size: 18px; font-weight: 700; }
+    .logo svg { flex-shrink: 0; }
+    .logo span { color: var(--red); }
+    .logo .admin-tag { font-size: 11px; background: var(--red); color: white; padding: 2px 8px; border-radius: 4px; margin-left: 8px; }
+
+    .layout { display: flex; min-height: calc(100vh - 54px); }
+    .sidebar { width: 220px; background: var(--navy); border-right: 1px solid var(--border); padding: 16px 0; flex-shrink: 0; }
+    .sidebar-item { padding: 10px 20px; font-size: 13px; color: var(--gray); cursor: pointer; border-left: 3px solid transparent; transition: all 0.15s; display: flex; align-items: center; gap: 10px; }
+    .sidebar-item:hover { color: var(--white); background: var(--navy-light); }
+    .sidebar-item.active { color: var(--red); border-left-color: var(--red); background: var(--navy-light); }
+    .sidebar-item svg { width: 16px; height: 16px; flex-shrink: 0; }
+
+    .content { flex: 1; padding: 24px; max-width: 1000px; }
+    .page { display: none; }
+    .page.active { display: block; }
+    .page-title { font-size: 20px; font-weight: 700; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
+
+    .card { background: var(--navy); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 24px; margin-bottom: 20px; }
+    .card-title { font-size: 12px; font-weight: 600; color: var(--gray); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 16px; }
+
+    .stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 24px; }
+    .stat-box { background: var(--navy); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; text-align: center; }
+    .stat-box .val { font-size: 28px; font-weight: 700; font-family: var(--font-mono); }
+    .stat-box .lbl { font-size: 10px; color: var(--gray); text-transform: uppercase; margin-top: 4px; }
+
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th { text-align: left; color: var(--gray); font-weight: 500; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; padding: 10px 12px; border-bottom: 1px solid var(--border); }
+    td { padding: 10px 12px; border-bottom: 1px solid rgba(55,65,81,0.5); vertical-align: middle; }
+    tr:hover td { background: var(--navy-light); }
+
+    .badge { font-size: 10px; padding: 3px 8px; border-radius: 100px; font-weight: 600; display: inline-block; }
+    .badge-green { background: rgba(16,185,129,0.15); color: var(--green); }
+    .badge-yellow { background: rgba(245,158,11,0.15); color: var(--yellow); }
+    .badge-red { background: rgba(220,38,38,0.15); color: var(--red); }
+    .badge-gray { background: rgba(107,114,128,0.15); color: var(--gray); }
+    .badge-blue { background: rgba(59,130,246,0.15); color: var(--blue); }
+
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .form-group { margin-bottom: 16px; }
+    .form-group label { display: block; font-size: 11px; font-weight: 500; color: var(--gray); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }
+    input, select { background: var(--navy-dark); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 12px; color: var(--white); font-size: 14px; width: 100%; outline: none; }
+    input:focus, select:focus { border-color: var(--red); }
+
+    .btn { display: inline-flex; align-items: center; gap: 6px; padding: 10px 18px; border-radius: var(--radius); font-size: 13px; font-weight: 600; cursor: pointer; border: none; transition: all 0.15s; }
+    .btn-primary { background: var(--red); color: white; }
+    .btn-primary:hover { background: var(--red-hover); }
+    .btn-secondary { background: var(--navy-lighter); color: var(--white); border: 1px solid var(--border); }
+    .btn-secondary:hover { border-color: var(--gray-dark); }
+    .btn-sm { padding: 5px 10px; font-size: 11px; }
+    .btn-green { background: var(--green); color: white; }
+    .btn-green:hover { background: var(--green); opacity: 0.9; }
+    .btn-danger { background: transparent; color: var(--red); border: 1px solid var(--red); }
+    .btn-danger:hover { background: var(--red); color: white; }
+
+    .action-bar { display: flex; gap: 8px; align-items: center; justify-content: space-between; margin-bottom: 16px; flex-wrap: wrap; }
+    .mono { font-family: var(--font-mono); }
+    .text-sm { font-size: 12px; }
+    .text-gray { color: var(--gray); }
+
+    .toast { position: fixed; bottom: 24px; right: 24px; background: var(--navy); border: 1px solid var(--green); border-radius: var(--radius); padding: 12px 20px; font-size: 13px; color: var(--green); z-index: 999; transform: translateY(100px); opacity: 0; transition: all 0.3s; pointer-events: none; }
+    .toast.show { transform: translateY(0); opacity: 1; }
+    .toast.error { border-color: var(--red); color: var(--red); }
+
+    .empty { text-align: center; padding: 32px; color: var(--gray); }
+
+    /* Login */
+    .login-page { display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 24px; }
+    .login-card { background: var(--navy); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 40px; width: 100%; max-width: 380px; }
+    .login-card h2 { font-size: 20px; margin-bottom: 4px; }
+    .login-card p { color: var(--gray); font-size: 13px; margin-bottom: 24px; }
+
+    /* Modal */
+    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 200; align-items: center; justify-content: center; }
+    .modal-overlay.visible { display: flex; }
+    .modal { background: var(--navy); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 28px; width: 100%; max-width: 500px; }
+    .modal h3 { font-size: 16px; margin-bottom: 16px; }
+
+    @media (max-width: 768px) {
+      .layout { flex-direction: column; }
+      .sidebar { width: 100%; display: flex; overflow-x: auto; padding: 0; border-right: none; border-bottom: 1px solid var(--border); }
+      .sidebar-item { border-left: none; border-bottom: 2px solid transparent; padding: 12px 16px; white-space: nowrap; }
+      .sidebar-item.active { border-bottom-color: var(--red); border-left-color: transparent; }
+      .form-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="login-page" id="loginPage">
+  <div class="login-card">
+    <h2>Admin Panel</h2>
+    <p>NoBull Picks administration. Admin credentials required.</p>
+    <div class="form-group">
+      <label>Username</label>
+      <input type="text" id="loginUser" placeholder="admin" value="admin">
+    </div>
+    <div class="form-group">
+      <label>Password</label>
+      <input type="password" id="loginPass" placeholder="Password">
+    </div>
+    <button class="btn btn-primary" style="width:100%;justify-content:center;" id="loginBtn">Log In</button>
+  </div>
+</div>
+
+<!-- ADMIN APP -->
+<div id="adminApp" style="display:none;">
+  <header class="header">
+    <div class="logo">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+      NoBull <span>Picks</span>
+      <span class="admin-tag">ADMIN</span>
+    </div>
+    <button class="btn btn-sm btn-secondary" id="logoutBtn">Logout</button>
+  </header>
+
+  <div class="layout">
+    <nav class="sidebar">
+      <div class="sidebar-item active" data-page="overview">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+        Overview
+      </div>
+      <div class="sidebar-item" data-page="competitions">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9H4.5a2.5 2.5 0 010-5C7 4 7 7 7 7"/><path d="M18 9h1.5a2.5 2.5 0 000-5C17 4 17 7 17 7"/><path d="M4 22h16"/><path d="M18 2H6v7a6 6 0 0012 0V2Z"/></svg>
+        Competitions
+      </div>
+      <div class="sidebar-item" data-page="users">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+        Users
+      </div>
+      <div class="sidebar-item" data-page="invites">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+        Invite Codes
+      </div>
+      <div class="sidebar-item" data-page="prices">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+        Price Status
+      </div>
+    </nav>
+
+    <div class="content">
+      <!-- OVERVIEW -->
+      <div class="page active" id="page-overview">
+        <div class="page-title">Dashboard Overview</div>
+        <div class="stats-row" id="overviewStats"></div>
+        <div class="card">
+          <div class="card-title">Recent Activity</div>
+          <div id="recentActivity"><div class="empty">Loading...</div></div>
+        </div>
+      </div>
+
+      <!-- COMPETITIONS -->
+      <div class="page" id="page-competitions">
+        <div class="page-title">Competitions</div>
+        <div class="action-bar">
+          <span class="text-sm text-gray">Manage quarterly and yearly competitions</span>
+          <button class="btn btn-primary btn-sm" id="newCompBtn">+ New Competition</button>
+        </div>
+        <div class="card" style="padding:0;overflow:hidden;">
+          <table>
+            <thead><tr><th>Name</th><th>Type</th><th>Dates</th><th>Status</th><th>Players</th><th>Actions</th></tr></thead>
+            <tbody id="competitionsTable"><tr><td colspan="6" class="empty">Loading...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- USERS -->
+      <div class="page" id="page-users">
+        <div class="page-title">Users</div>
+        <div class="action-bar">
+          <span class="text-sm text-gray" id="userCount">-- registered users</span>
+        </div>
+        <div class="card" style="padding:0;overflow:hidden;">
+          <table>
+            <thead><tr><th>ID</th><th>Display Name</th><th>Username</th><th>Joined</th><th>Role</th><th>Picks</th></tr></thead>
+            <tbody id="usersTable"><tr><td colspan="6" class="empty">Loading...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- INVITE CODES -->
+      <div class="page" id="page-invites">
+        <div class="page-title">Invite Codes</div>
+        <div class="action-bar">
+          <span class="text-sm text-gray">Manage access to the competition</span>
+          <button class="btn btn-primary btn-sm" id="newInviteBtn">+ Create Code</button>
+        </div>
+        <div class="card" style="padding:0;overflow:hidden;">
+          <table>
+            <thead><tr><th>Code</th><th>Uses</th><th>Max Uses</th><th>Status</th><th>Created</th><th>Actions</th></tr></thead>
+            <tbody id="invitesTable"><tr><td colspan="6" class="empty">Loading...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- PRICE STATUS -->
+      <div class="page" id="page-prices">
+        <div class="page-title">Price Fetching Status</div>
+        <div class="card">
+          <div class="card-title">Active Symbols Being Tracked</div>
+          <p class="text-sm text-gray" style="margin-bottom:16px;">Prices update every 5 minutes (stocks/ETFs) and every 15 minutes (crypto).</p>
+          <div id="pricesList"><div class="empty">Loading...</div></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Manual Price Fetch</div>
+          <p class="text-sm text-gray" style="margin-bottom:12px;">Trigger an immediate price update for all active symbols.</p>
+          <button class="btn btn-green btn-sm" id="fetchPricesBtn">Fetch Prices Now</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CREATE COMPETITION MODAL -->
+<div class="modal-overlay" id="compModal">
+  <div class="modal">
+    <h3>Create New Competition</h3>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Name</label>
+        <input type="text" id="compName" placeholder="e.g. Q3 2026">
+      </div>
+      <div class="form-group">
+        <label>Type</label>
+        <select id="compType"><option value="quarterly">Quarterly</option><option value="yearly">Yearly</option></select>
+      </div>
+      <div class="form-group">
+        <label>Quarter (if quarterly)</label>
+        <select id="compQuarter"><option value="Q1">Q1</option><option value="Q2">Q2</option><option value="Q3">Q3</option><option value="Q4">Q4</option></select>
+      </div>
+      <div class="form-group">
+        <label>Year</label>
+        <input type="number" id="compYear" value="2026">
+      </div>
+      <div class="form-group">
+        <label>Draft Start</label>
+        <input type="date" id="compDraftStart">
+      </div>
+      <div class="form-group">
+        <label>Lock Date</label>
+        <input type="date" id="compLockDate">
+      </div>
+      <div class="form-group" style="grid-column:1/-1;">
+        <label>End Date</label>
+        <input type="date" id="compEndDate">
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px;">
+      <button class="btn btn-secondary btn-sm" id="compModalCancel">Cancel</button>
+      <button class="btn btn-primary btn-sm" id="compModalSave">Create Competition</button>
+    </div>
+  </div>
+</div>
+
+<!-- CREATE INVITE MODAL -->
+<div class="modal-overlay" id="inviteModal">
+  <div class="modal">
+    <h3>Create Invite Code</h3>
+    <div class="form-group">
+      <label>Code (leave blank for auto-generated)</label>
+      <input type="text" id="inviteCode" placeholder="e.g. SUMMER2026" style="text-transform:uppercase;">
+    </div>
+    <div class="form-group">
+      <label>Max Uses (0 = unlimited)</label>
+      <input type="number" id="inviteMaxUses" value="0" min="0">
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px;">
+      <button class="btn btn-secondary btn-sm" id="inviteModalCancel">Cancel</button>
+      <button class="btn btn-primary btn-sm" id="inviteModalSave">Create Code</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+var API_BASE = window.location.origin + '/api';
+var token = null;
+
+function api(method, path, body) {
+  var opts = { method: method, headers: { 'Content-Type': 'application/json' } };
+  if (token) opts.headers['Authorization'] = 'Bearer ' + token;
+  if (body) opts.body = JSON.stringify(body);
+  return fetch(API_BASE + path, opts).then(function(res) {
+    return res.json().then(function(data) {
+      if (!res.ok) throw new Error(data.error || 'Request failed');
+      return data;
+    });
+  });
+}
+
+// ==================== AUTH ====================
+function login() {
+  var username = document.getElementById('loginUser').value.trim();
+  var password = document.getElementById('loginPass').value;
+  if (!username || !password) { showToast('Enter credentials', true); return; }
+
+  api('POST', '/auth/login', { username: username, password: password })
+    .then(function(data) {
+      if (!data.user.is_admin) { showToast('Admin access required', true); return; }
+      token = data.token;
+      document.getElementById('loginPage').style.display = 'none';
+      document.getElementById('adminApp').style.display = 'block';
+      loadAll();
+    })
+    .catch(function(err) { showToast(err.message, true); });
+}
+
+// ==================== LOAD DATA ====================
+function loadAll() {
+  loadOverview();
+  loadCompetitions();
+  loadUsers();
+  loadInvites();
+  loadPrices();
+}
+
+function loadOverview() {
+  Promise.all([
+    api('GET', '/competitions'),
+    api('GET', '/admin/stats').catch(function() { return { users: 0, picks: 0 }; })
+  ]).then(function(results) {
+    var comps = results[0].competitions || [];
+    var active = comps.filter(function(c) { return c.status === 'active' || c.status === 'drafting'; });
+    var totalPlayers = 0; var totalPicks = 0;
+    comps.forEach(function(c) { totalPlayers += c.player_count || 0; totalPicks += c.total_picks || 0; });
+
+    var html = '';
+    html += '<div class="stat-box"><div class="val" style="color:var(--white);">' + comps.length + '</div><div class="lbl">Competitions</div></div>';
+    html += '<div class="stat-box"><div class="val" style="color:var(--green);">' + active.length + '</div><div class="lbl">Active</div></div>';
+    html += '<div class="stat-box"><div class="val" style="color:var(--blue);">' + totalPlayers + '</div><div class="lbl">Total Players</div></div>';
+    html += '<div class="stat-box"><div class="val" style="color:var(--yellow);">' + totalPicks + '</div><div class="lbl">Total Picks</div></div>';
+    document.getElementById('overviewStats').innerHTML = html;
+
+    // Recent activity
+    var activity = '';
+    active.forEach(function(c) {
+      activity += '<div style="padding:10px 0;border-bottom:1px solid rgba(55,65,81,0.4);font-size:13px;">';
+      activity += '<strong>' + c.name + '</strong> is <span class="badge badge-green">' + c.status + '</span>';
+      activity += ' &mdash; ' + (c.player_count || 0) + ' players, ' + (c.total_picks || 0) + ' picks';
+      activity += '</div>';
+    });
+    document.getElementById('recentActivity').innerHTML = activity || '<div class="empty">No active competitions</div>';
+  });
+}
+
+function loadCompetitions() {
+  api('GET', '/competitions').then(function(data) {
+    var comps = data.competitions || [];
+    if (comps.length === 0) {
+      document.getElementById('competitionsTable').innerHTML = '<tr><td colspan="6" class="empty">No competitions yet</td></tr>';
+      return;
+    }
+    var html = '';
+    comps.forEach(function(c) {
+      var statusClass = c.status === 'active' ? 'badge-green' : c.status === 'drafting' ? 'badge-yellow' : c.status === 'ended' ? 'badge-gray' : 'badge-blue';
+      var dates = formatDate(c.lock_date) + ' - ' + formatDate(c.end_date);
+      html += '<tr>';
+      html += '<td style="font-weight:600;">' + c.name + '</td>';
+      html += '<td><span class="badge badge-blue">' + c.type + '</span></td>';
+      html += '<td class="text-sm text-gray">' + dates + '</td>';
+      html += '<td><span class="badge ' + statusClass + '">' + c.status + '</span></td>';
+      html += '<td class="mono">' + (c.player_count || 0) + '</td>';
+      html += '<td>';
+      if (c.status === 'upcoming') html += '<button class="btn btn-sm btn-green" onclick="updateStatus(' + c.id + ',\'drafting\')">Start Draft</button> ';
+      if (c.status === 'drafting') html += '<button class="btn btn-sm btn-green" onclick="updateStatus(' + c.id + ',\'active\')">Lock &amp; Start</button> ';
+      if (c.status === 'active') html += '<button class="btn btn-sm btn-secondary" onclick="updateStatus(' + c.id + ',\'ended\')">End</button> ';
+      html += '</td></tr>';
+    });
+    document.getElementById('competitionsTable').innerHTML = html;
+  });
+}
+
+function loadUsers() {
+  api('GET', '/admin/users').catch(function() {
+    return { users: [] };
+  }).then(function(data) {
+    var users = data.users || [];
+    document.getElementById('userCount').textContent = users.length + ' registered users';
+    if (users.length === 0) {
+      document.getElementById('usersTable').innerHTML = '<tr><td colspan="6" class="empty">No users</td></tr>';
+      return;
+    }
+    var html = '';
+    users.forEach(function(u) {
+      var role = u.is_admin ? '<span class="badge badge-red">Admin</span>' : '<span class="badge badge-gray">Player</span>';
+      html += '<tr>';
+      html += '<td class="mono text-gray">' + u.id + '</td>';
+      html += '<td style="font-weight:600;">' + u.display_name + '</td>';
+      html += '<td class="mono text-sm">' + u.username + '</td>';
+      html += '<td class="text-sm text-gray">' + formatDate(u.created_at) + '</td>';
+      html += '<td>' + role + '</td>';
+      html += '<td class="mono">' + (u.pick_count || 0) + '</td>';
+      html += '</tr>';
+    });
+    document.getElementById('usersTable').innerHTML = html;
+  });
+}
+
+function loadInvites() {
+  api('GET', '/admin/invites').catch(function() {
+    return { invites: [] };
+  }).then(function(data) {
+    var invites = data.invites || [];
+    if (invites.length === 0) {
+      document.getElementById('invitesTable').innerHTML = '<tr><td colspan="6" class="empty">No invite codes</td></tr>';
+      return;
+    }
+    var html = '';
+    invites.forEach(function(inv) {
+      var status = inv.active ? '<span class="badge badge-green">Active</span>' : '<span class="badge badge-gray">Disabled</span>';
+      var maxStr = inv.max_uses === 0 ? 'Unlimited' : inv.max_uses;
+      html += '<tr>';
+      html += '<td class="mono" style="font-weight:600;font-size:14px;">' + inv.code + '</td>';
+      html += '<td class="mono">' + inv.use_count + '</td>';
+      html += '<td class="mono">' + maxStr + '</td>';
+      html += '<td>' + status + '</td>';
+      html += '<td class="text-sm text-gray">' + formatDate(inv.created_at) + '</td>';
+      html += '<td>';
+      if (inv.active) html += '<button class="btn btn-sm btn-danger" onclick="disableInvite(' + inv.id + ')">Disable</button>';
+      else html += '<button class="btn btn-sm btn-green" onclick="enableInvite(' + inv.id + ')">Enable</button>';
+      html += '</td></tr>';
+    });
+    document.getElementById('invitesTable').innerHTML = html;
+  });
+}
+
+function loadPrices() {
+  api('GET', '/admin/tracked-symbols').catch(function() {
+    return { symbols: [] };
+  }).then(function(data) {
+    var symbols = data.symbols || [];
+    if (symbols.length === 0) {
+      document.getElementById('pricesList').innerHTML = '<div class="empty">No symbols being tracked (add picks to a competition first)</div>';
+      return;
+    }
+    var html = '<table><thead><tr><th>Symbol</th><th>Type</th><th>Current Price</th><th>Last Updated</th></tr></thead><tbody>';
+    symbols.forEach(function(s) {
+      var priceStr = s.current_price ? '$' + s.current_price.toFixed(2) : '--';
+      html += '<tr><td class="mono" style="font-weight:600;">' + s.symbol + '</td>';
+      html += '<td><span class="badge badge-blue">' + s.type + '</span></td>';
+      html += '<td class="mono">' + priceStr + '</td>';
+      html += '<td class="text-sm text-gray">' + (s.last_updated || 'Never') + '</td></tr>';
+    });
+    html += '</tbody></table>';
+    document.getElementById('pricesList').innerHTML = html;
+  });
+}
+
+// ==================== ACTIONS ====================
+function updateStatus(compId, newStatus) {
+  var confirmMsg = 'Change competition status to "' + newStatus + '"?';
+  if (newStatus === 'active') confirmMsg += ' This will LOCK all picks and remove players with fewer than 3.';
+  if (!confirm(confirmMsg)) return;
+
+  api('PATCH', '/competitions/' + compId + '/status', { status: newStatus })
+    .then(function() {
+      showToast('Competition updated to ' + newStatus);
+      loadCompetitions();
+      loadOverview();
+    })
+    .catch(function(err) { showToast(err.message, true); });
+}
+
+function createCompetition() {
+  var body = {
+    name: document.getElementById('compName').value.trim(),
+    type: document.getElementById('compType').value,
+    quarter: document.getElementById('compQuarter').value,
+    year: parseInt(document.getElementById('compYear').value),
+    draft_start: document.getElementById('compDraftStart').value,
+    lock_date: document.getElementById('compLockDate').value,
+    end_date: document.getElementById('compEndDate').value
+  };
+  if (!body.name || !body.draft_start || !body.lock_date || !body.end_date) {
+    showToast('Fill in all fields', true); return;
+  }
+  api('POST', '/competitions', body)
+    .then(function() {
+      showToast('Competition created!');
+      document.getElementById('compModal').classList.remove('visible');
+      loadCompetitions();
+      loadOverview();
+    })
+    .catch(function(err) { showToast(err.message, true); });
+}
+
+function createInvite() {
+  var code = document.getElementById('inviteCode').value.trim().toUpperCase();
+  var maxUses = parseInt(document.getElementById('inviteMaxUses').value) || 0;
+  if (!code) code = generateCode();
+
+  api('POST', '/admin/invites', { code: code, max_uses: maxUses })
+    .then(function() {
+      showToast('Invite code "' + code + '" created!');
+      document.getElementById('inviteModal').classList.remove('visible');
+      loadInvites();
+    })
+    .catch(function(err) { showToast(err.message, true); });
+}
+
+function disableInvite(id) {
+  api('PATCH', '/admin/invites/' + id, { active: 0 }).then(function() {
+    showToast('Invite disabled');
+    loadInvites();
+  }).catch(function(err) { showToast(err.message, true); });
+}
+
+function enableInvite(id) {
+  api('PATCH', '/admin/invites/' + id, { active: 1 }).then(function() {
+    showToast('Invite enabled');
+    loadInvites();
+  }).catch(function(err) { showToast(err.message, true); });
+}
+
+function fetchPricesNow() {
+  showToast('Fetching prices...');
+  api('POST', '/admin/fetch-prices').then(function(data) {
+    showToast('Prices updated! ' + (data.updated || 0) + ' symbols refreshed.');
+    loadPrices();
+  }).catch(function(err) { showToast(err.message, true); });
+}
+
+// ==================== UTILITIES ====================
+function generateCode() {
+  var chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  var code = '';
+  for (var i = 0; i < 8; i++) code += chars.charAt(Math.floor(Math.random() * chars.length));
+  return code;
+}
+
+function formatDate(d) {
+  if (!d) return '--';
+  var date = new Date(d);
+  var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return months[date.getMonth()] + ' ' + date.getDate() + ', ' + date.getFullYear();
+}
+
+function showToast(msg, isError) {
+  var toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.className = 'toast show' + (isError ? ' error' : '');
+  setTimeout(function() { toast.className = 'toast'; }, 3000);
+}
+
+// ==================== EVENTS ====================
+document.getElementById('loginBtn').addEventListener('click', login);
+document.getElementById('loginPass').addEventListener('keydown', function(e) { if (e.key === 'Enter') login(); });
+document.getElementById('logoutBtn').addEventListener('click', function() { window.location.reload(); });
+document.getElementById('newCompBtn').addEventListener('click', function() { document.getElementById('compModal').classList.add('visible'); });
+document.getElementById('compModalCancel').addEventListener('click', function() { document.getElementById('compModal').classList.remove('visible'); });
+document.getElementById('compModalSave').addEventListener('click', createCompetition);
+document.getElementById('newInviteBtn').addEventListener('click', function() { document.getElementById('inviteModal').classList.add('visible'); });
+document.getElementById('inviteModalCancel').addEventListener('click', function() { document.getElementById('inviteModal').classList.remove('visible'); });
+document.getElementById('inviteModalSave').addEventListener('click', createInvite);
+document.getElementById('fetchPricesBtn').addEventListener('click', fetchPricesNow);
+
+// Sidebar nav
+var sidebarItems = document.querySelectorAll('.sidebar-item');
+for (var i = 0; i < sidebarItems.length; i++) {
+  (function(item) {
+    item.addEventListener('click', function() {
+      for (var j = 0; j < sidebarItems.length; j++) sidebarItems[j].classList.remove('active');
+      var pages = document.querySelectorAll('.page');
+      for (var j = 0; j < pages.length; j++) pages[j].classList.remove('active');
+      item.classList.add('active');
+      document.getElementById('page-' + item.getAttribute('data-page')).classList.add('active');
+    });
+  })(sidebarItems[i]);
+}
+</script>
+</body>
+</html>
