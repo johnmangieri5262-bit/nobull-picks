@@ -3,7 +3,7 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app/server
 COPY server/package.json server/package-lock.json* ./
-RUN npm ci --production
+RUN npm install --omit=dev
 
 # ---- Runtime stage ----
 FROM node:20-alpine
