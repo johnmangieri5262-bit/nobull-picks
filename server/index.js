@@ -138,6 +138,7 @@ cron.schedule('*/15 * * * 0,6', () => {
 
 // ==================== STARTUP ====================
 // Initialize WebSocket on the HTTP server
+require('./seed');
 initWebSocket(server);
 
 server.listen(PORT, () => {
