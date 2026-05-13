@@ -410,7 +410,10 @@ function loadLeaderboard() {
 }
 
 function loadMyPicks() {
-  if (!activeCompetition) return;
+  if (!activeCompetition) {
+    setTimeout(loadMyPicks, 1000);
+    return;
+  }
   api('GET', '/picks?competition_id=' + activeCompetition.id).then(function(data) {
     myPicks = data.picks;
     renderPicks();
