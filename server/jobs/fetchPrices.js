@@ -1,6 +1,7 @@
 // jobs/fetchPrices.js — Fetch current prices from Yahoo Finance & update picks
-const yahooFinance = require('yahoo-finance2').default;
 const db = require('../database');
+
+let yahooFinance;
 
 // Map crypto symbols to Yahoo Finance format
 const CRYPTO_MAP = {
@@ -17,6 +18,11 @@ const CRYPTO_MAP = {
 };
 
 async function fetchPrices() {
+    // Dynamic import for ESM-only yahoo-finance2
+  if (!yahooFinance) {
+    const mod = await import('yahoo-finance2');
+    yahooFinance = mod.default;
+  }
   console.log(`[${new Date().toISOString()}] Starting price fetch...`);
 
   // Get all unique symbols from active/drafting competitions
