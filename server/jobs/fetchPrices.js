@@ -18,12 +18,13 @@ const CRYPTO_MAP = {
 };
 
 async function fetchPrices() {
-    // Dynamic import for ESM-only yahoo-finance2
+  console.log(`[${new Date().toISOString()}] Starting price fetch...`);
+
+  // Dynamic import for ESM-only yahoo-finance2
   if (!yahooFinance) {
     const mod = await import('yahoo-finance2');
     yahooFinance = mod.default;
   }
-  console.log(`[${new Date().toISOString()}] Starting price fetch...`);
 
   // Get all unique symbols from active/drafting competitions
   const symbols = db.prepare(`
@@ -38,19 +39,18 @@ async function fetchPrices() {
   }
 
   console.log(`Fetching prices for ${symbols.length} symbols...`);
-  
+
   let updated = 0;
   let failed = 0;
 
   for (const { symbol, type } of symbols) {
     try {
-      // Convert to Yahoo Finance ticker format
-      const yahooSymbol = type === 'crypto' 
+      const yahooSymbol = type === 'crypto'
         ? (CRYPTO_MAP[symbol] || symbol + '-USD')
         : symbol;
 
       const quote = await yahooFinance.quote(yahooSymbol);
-      
+
       if (!quote || !quote.regularMarketPrice) {
         console.warn(`  No price data for ${symbol} (${yahooSymbol})`);
         failed++;
@@ -59,27 +59,19 @@ async function fetchPrices() {
 
       const price = quote.regularMarketPrice;
 
-      // Update current_price for all picks with this symbol
-      db.prepare(`
-        UPDATE picks SET current_price = ? WHERE symbol = ?
-      `).run(price, symbol);
+      db.prepare(`UPDATE picks SET current_price = ? WHERE symbol = ?`).run(price, symbol);
 
-      // Calculate return_pct for locked picks
       db.prepare(`
-        UPDATE picks 
+        UPDATE picks
         SET return_pct = ROUND(((? - entry_price) / entry_price) * 100, 2)
         WHERE symbol = ? AND locked = 1 AND entry_price > 0
       `).run(price, symbol);
 
-      // Record price history
-      db.prepare(`
-        INSERT INTO price_history (symbol, price) VALUES (?, ?)
-      `).run(symbol, price);
+      db.prepare(`INSERT INTO price_history (symbol, price) VALUES (?, ?)`).run(symbol, price);
 
       updated++;
       console.log(`  ${symbol}: $${price.toFixed(2)}`);
 
-      // Rate limiting — small delay between requests
       await new Promise(r => setTimeout(r, 300));
     } catch (err) {
       console.error(`  Error fetching ${symbol}:`, err.message);
@@ -90,7 +82,6 @@ async function fetchPrices() {
   console.log(`Price fetch complete. Updated: ${updated}, Failed: ${failed}`);
 }
 
-// If run directly (npm run fetch-prices)
 if (require.main === module) {
   require('dotenv').config({ path: require('path').join(__dirname, '..', '.env') });
   fetchPrices().then(() => process.exit(0)).catch(err => {
