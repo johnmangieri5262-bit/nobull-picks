@@ -698,7 +698,7 @@ function register() {
 
 
 
-  api('POST', '/auth/register', { username: username, password: password, display_name: display_name })
+  api('POST', '/auth/register', { username: username, password: pw, display_name: display_name })
 
     .then(function(data) {
 
@@ -1615,4 +1615,3 @@ try {
 </body>
 
 </html>
-
