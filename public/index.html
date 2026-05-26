@@ -1,574 +1,1058 @@
 <!DOCTYPE html>
 
+
 <html lang="en">
+
 
 <head>
 
+
   <meta charset="UTF-8">
+
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+
   <title>NoBull Picks</title>
+
 
   <style>
 
+
     :root {
+
 
       --navy-dark: #0d0d0d;
 
+
       --navy: #1a1a1a;
+
 
       --navy-light: #242424;
 
+
       --navy-lighter: #2e2e2e;
+
 
       --red: #c41e1e;
 
+
       --red-hover: #e02020;
+
 
       --green: #10b981;
 
+
       --yellow: #f59e0b;
+
 
       --blue: #3b82f6;
 
+
       --purple: #8b5cf6;
+
 
       --white: #f0f0f0;
 
+
       --gray: #a0a0a0;
+
 
       --gray-dark: #707070;
 
+
       --border: #333333;
+
 
       --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 
+
       --font-mono: 'SF Mono', 'Fira Code', Consolas, monospace;
+
 
       --radius: 8px;
 
+
       --radius-lg: 12px;
+
 
     }
 
+
     * { margin: 0; padding: 0; box-sizing: border-box; }
+
 
     body { font-family: var(--font); background: var(--navy-dark); color: var(--white); min-height: 100vh; line-height: 1.5; }
 
 
 
+
+
     .header { background: var(--navy); border-bottom: 2px solid var(--red); padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
+
 
     .logo { display: flex; align-items: center; gap: 10px; font-size: 20px; font-weight: 700; }
 
+
     .logo svg { flex-shrink: 0; }
+
 
     .logo span { color: var(--red); }
 
+
     .header-right { display: flex; align-items: center; gap: 12px; }
 
+
     .user-badge { background: var(--navy-light); border: 1px solid var(--border); border-radius: var(--radius); padding: 6px 12px; font-size: 13px; color: var(--gray); display: none; }
+
 
     .user-badge strong { color: var(--white); }
 
 
 
+
+
     .nav { background: var(--navy); border-bottom: 1px solid var(--border); display: none; padding: 0 24px; overflow-x: auto; white-space: nowrap; }
+
 
     .nav-tab { padding: 12px 18px; font-size: 13px; font-weight: 500; color: var(--gray); cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.15s; display: inline-block; }
 
+
     .nav-tab:hover { color: var(--white); }
+
 
     .nav-tab.active { color: var(--red); border-bottom-color: var(--red); }
 
 
 
+
+
     .main { max-width: 1200px; margin: 0 auto; padding: 24px; display: none; }
 
+
     .page { display: none; }
+
 
     .page.active { display: block; }
 
 
 
+
+
     .card { background: var(--navy); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 24px; margin-bottom: 20px; }
+
 
     .card-title { font-size: 13px; font-weight: 600; color: var(--gray); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
 
 
 
+
+
     .status-banner { background: linear-gradient(135deg, var(--navy-light), var(--navy)); border: 1px solid var(--red); border-radius: var(--radius-lg); padding: 24px; margin-bottom: 24px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; }
+
 
     .status-info h2 { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
 
+
     .status-info p { color: var(--gray); font-size: 14px; }
+
 
     .status-badge { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 100px; font-size: 12px; font-weight: 600; margin-top: 8px; }
 
+
     .status-badge.drafting { background: rgba(245,158,11,0.15); color: var(--yellow); border: 1px solid var(--yellow); }
+
 
     .status-badge.active { background: rgba(16,185,129,0.15); color: var(--green); border: 1px solid var(--green); }
 
+
     .status-badge.ended { background: rgba(107,114,128,0.15); color: var(--gray); border: 1px solid var(--gray-dark); }
 
+
     .countdown .days { font-size: 36px; font-weight: 700; font-family: var(--font-mono); color: var(--red); text-align: right; }
+
 
     .countdown .label { font-size: 12px; color: var(--gray); text-transform: uppercase; text-align: right; }
 
 
 
+
+
     .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 24px; }
+
 
     .stat-card { background: var(--navy); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; text-align: center; }
 
+
     .stat-value { font-size: 24px; font-weight: 700; font-family: var(--font-mono); }
+
 
     .stat-label { font-size: 10px; color: var(--gray); text-transform: uppercase; letter-spacing: 0.05em; margin-top: 4px; }
 
 
 
+
+
     table { width: 100%; border-collapse: collapse; font-size: 13px; }
+
 
     th { text-align: left; color: var(--gray); font-weight: 500; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; padding: 10px 12px; border-bottom: 1px solid var(--border); }
 
+
     td { padding: 11px 12px; border-bottom: 1px solid rgba(55,65,81,0.5); }
+
 
     tr:hover td { background: var(--navy-light); }
 
+
     .rank { font-weight: 700; font-family: var(--font-mono); }
+
 
     .rank-1 { color: #fbbf24; }
 
+
     .rank-2 { color: #d1d5db; }
+
 
     .rank-3 { color: #d97706; }
 
+
     .positive { color: var(--green); }
 
+
     .negative { color: var(--red); }
+
 
     .mono { font-family: var(--font-mono); font-weight: 600; }
 
 
 
+
+
     .picks-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+
 
     .pick-card { background: var(--navy-light); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; display: flex; justify-content: space-between; align-items: center; transition: border-color 0.15s; }
 
+
     .pick-card:hover { border-color: var(--gray-dark); }
+
 
     .pick-ticker { font-weight: 700; font-size: 15px; font-family: var(--font-mono); }
 
+
     .pick-name { font-size: 11px; color: var(--gray); margin-top: 2px; }
+
 
     .pick-type { font-size: 9px; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; font-weight: 600; display: inline-block; margin-top: 4px; }
 
+
     .pick-type-stock { background: rgba(59,130,246,0.2); color: #60a5fa; }
+
 
     .pick-type-etf { background: rgba(139,92,246,0.2); color: #a78bfa; }
 
+
     .pick-type-crypto { background: rgba(245,158,11,0.2); color: #fbbf24; }
+
 
     .pick-price { font-size: 11px; color: var(--gray); margin-top: 4px; }
 
 
 
+
+
     .add-section { background: var(--navy-light); border: 1px dashed var(--border); border-radius: var(--radius); padding: 20px; margin-top: 16px; }
+
 
     .search-wrap { position: relative; margin-bottom: 12px; }
 
+
     input, select { background: var(--navy-dark); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 12px; color: var(--white); font-size: 14px; width: 100%; outline: none; }
+
 
     input:focus, select:focus { border-color: var(--red); }
 
+
     .search-results { position: absolute; top: 100%; left: 0; right: 0; background: var(--navy); border: 1px solid var(--border); border-radius: var(--radius); margin-top: 4px; max-height: 200px; overflow-y: auto; z-index: 50; display: none; }
+
 
     .search-item { padding: 10px 14px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(55,65,81,0.3); }
 
+
     .search-item:hover { background: var(--navy-light); }
+
 
     .search-item:last-child { border-bottom: none; }
 
 
 
+
+
     .btn { display: inline-flex; align-items: center; gap: 6px; padding: 10px 18px; border-radius: var(--radius); font-size: 13px; font-weight: 600; cursor: pointer; border: none; transition: all 0.15s; }
+
 
     .btn-primary { background: var(--red); color: white; }
 
+
     .btn-primary:hover { background: var(--red-hover); }
+
 
     .btn-secondary { background: var(--navy-lighter); color: var(--white); border: 1px solid var(--border); }
 
+
     .btn-secondary:hover { border-color: var(--gray-dark); }
+
 
     .btn-sm { padding: 6px 12px; font-size: 12px; }
 
+
     .btn-remove { background: transparent; color: var(--red); border: 1px solid rgba(220,38,38,0.4); padding: 4px 10px; font-size: 11px; border-radius: 4px; cursor: pointer; margin-top: 6px; }
+
 
     .btn-remove:hover { background: var(--red); color: white; border-color: var(--red); }
 
 
 
+
+
     .auth-page { display: flex; align-items: center; justify-content: center; min-height: calc(100vh - 60px); padding: 24px; }
+
 
     .auth-card { background: var(--navy); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 40px; width: 100%; max-width: 400px; }
 
+
     .auth-card h2 { font-size: 24px; margin-bottom: 8px; }
+
 
     .auth-card .subtitle { color: var(--gray); margin-bottom: 24px; font-size: 14px; line-height: 1.6; }
 
+
     .form-group { margin-bottom: 16px; }
+
 
     .form-group label { display: block; font-size: 11px; font-weight: 500; color: var(--gray); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }
 
+
     .auth-toggle { text-align: center; margin-top: 16px; font-size: 13px; color: var(--gray); }
+
 
     .auth-toggle a { color: var(--red); cursor: pointer; text-decoration: underline; }
 
 
 
+
+
     .portfolio-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 20px; padding: 16px; background: var(--navy-light); border-radius: var(--radius); border: 1px solid var(--border); }
+
 
     .portfolio-stat { text-align: center; }
 
+
     .portfolio-stat .val { font-size: 20px; font-weight: 700; font-family: var(--font-mono); }
+
 
     .portfolio-stat .lbl { font-size: 10px; color: var(--gray); text-transform: uppercase; margin-top: 2px; }
 
 
 
+
+
     .perf-bar { height: 4px; background: var(--navy-lighter); border-radius: 2px; overflow: hidden; width: 80px; display: inline-block; vertical-align: middle; margin-left: 8px; }
+
 
     .perf-bar-fill { height: 100%; border-radius: 2px; }
 
 
 
+
+
     .history-item { display: flex; align-items: center; justify-content: space-between; padding: 14px 0; border-bottom: 1px solid rgba(55,65,81,0.4); flex-wrap: wrap; gap: 8px; }
+
 
     .history-item:last-child { border-bottom: none; }
 
 
 
+
+
     .rules-list { list-style: none; }
+
 
     .rules-list li { padding: 12px 0; border-bottom: 1px solid rgba(55,65,81,0.3); font-size: 14px; color: var(--gray); line-height: 1.6; }
 
+
     .rules-list li:last-child { border-bottom: none; }
+
 
     .rules-list li strong { color: var(--white); }
 
 
 
+
+
     .toast { position: fixed; bottom: 24px; right: 24px; background: var(--navy); border: 1px solid var(--green); border-radius: var(--radius); padding: 12px 20px; font-size: 13px; color: var(--green); z-index: 999; transform: translateY(100px); opacity: 0; transition: all 0.3s; pointer-events: none; }
 
+
     .toast.show { transform: translateY(0); opacity: 1; }
+
 
     .toast.error { border-color: var(--red); color: var(--red); }
 
 
 
+
+
     .flex-row { display: flex; gap: 8px; align-items: center; }
+
 
     .empty-state { text-align: center; padding: 40px; color: var(--gray); }
 
+
     .loading { text-align: center; padding: 40px; color: var(--gray); }
 
+
     .loading::after { content: ''; display: inline-block; width: 16px; height: 16px; border: 2px solid var(--gray-dark); border-top-color: var(--red); border-radius: 50%; animation: spin 0.8s linear infinite; margin-left: 8px; vertical-align: middle; }
+
 
     @keyframes spin { to { transform: rotate(360deg); } }
 
 
 
+
+
     @media (max-width: 768px) {
+
 
       .header { padding: 12px 16px; }
 
+
       .status-banner { flex-direction: column; text-align: center; }
+
 
       .countdown .days, .countdown .label { text-align: center; }
 
+
       .stats-grid { grid-template-columns: repeat(2, 1fr); }
+
 
       .picks-grid { grid-template-columns: 1fr; }
 
+
       .main { padding: 16px; }
+
 
     }
 
+
   </style>
 
+
 </head>
+
 
 <body>
 
 
 
+
+
 <header class="header">
+
 
   <div class="logo">
 
+
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+
 
     NoBull <span>Picks</span>
 
+
   </div>
+
 
   <div class="header-right">
 
+
     <div class="user-badge" id="userBadge"><strong id="displayName"></strong></div>
+
 
     <button class="btn btn-sm btn-secondary" id="logoutBtn" style="display:none;">Leave</button>
 
+
   </div>
+
 
 </header>
 
 
 
+
+
 <nav class="nav" id="mainNav">
+
 
   <div class="nav-tab active" data-page="dashboard">Leaderboard</div>
 
+
   <div class="nav-tab" data-page="picks">My Picks</div>
+
+
+  <div class="nav-tab" data-page="leagues">Leagues</div>
+
 
   <div class="nav-tab" data-page="history">History</div>
 
+
   <div class="nav-tab" data-page="rules">Rules</div>
+
 
 </nav>
 
 
 
+
+
 <!-- AUTH PAGE -->
+
 
 <div class="auth-page" id="authPage">
 
+
   <div class="auth-card">
+
 
     <h2>NoBull <span style="color:var(--red);">Picks</span></h2>
 
+
     <p class="subtitle">Fantasy stock picking competition. Pick 3-10 investments each quarter and compete for the best returns.</p>
+
 
     
 
+
     <!-- Login Form -->
+
 
     <div id="loginForm">
 
+
       <div class="form-group">
+
 
         <label>Email</label>
 
+
         <input type="email" id="loginUsername" placeholder="Your email address">
 
+
       </div>
+
 
       <div class="form-group">
 
+
         <label>Password</label>
+
 
         <input type="password" id="loginPassword" placeholder="Your password">
 
+
       </div>
+
 
       <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:8px;" id="loginBtn">Log In</button>
 
+
       <div class="auth-toggle">New here? <a id="showRegister">Create an account</a></div>
 
+
     </div>
+
+
 
 
 
     <!-- Register Form -->
 
+
     <div id="registerForm" style="display:none;">
 
+
       <div class="form-group">
+
 
         <label>Display Name</label>
 
+
         <input type="text" id="regDisplayName" placeholder="e.g. Warren B." maxlength="20">
+
 
       </div>
 
+
       <div class="form-group">
+
 
         <label>Email</label>
 
+
         <input type="email" id="regUsername" placeholder="your@email.com">
+
 
       </div>
 
+
       <div class="form-group">
+
 
         <label>Password</label>
 
+
         <input type="password" id="regPassword" placeholder="Min 6 characters">
 
+
       </div>
+
 
       <div class="form-group">
 
+
         <label>Confirm Password</label>
+
 
         <input type="password" id="regPasswordConfirm" placeholder="Type password again">
 
+
       </div>
+
+
 
 
 
       <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:8px;" id="registerBtn">Create Account</button>
 
+
       <div class="auth-toggle">Already have an account? <a id="showLogin">Log in</a></div>
+
 
     </div>
 
+
   </div>
+
 
 </div>
 
 
 
+
+
 <!-- MAIN CONTENT -->
+
 
 <main class="main" id="mainContent">
 
+
   <!-- DASHBOARD -->
+
 
   <div class="page active" id="page-dashboard">
 
+
     <div class="status-banner" id="statusBanner">
+
 
       <div class="status-info">
 
+
         <h2 id="compName">Loading...</h2>
+
 
         <p id="compDates"></p>
 
+
         <span class="status-badge drafting" id="compStatusBadge">--</span>
 
+
       </div>
+
 
       <div class="countdown">
 
+
         <div class="days" id="countdownDays">--</div>
+
 
         <div class="label" id="countdownLabel">Days until lock</div>
 
+
       </div>
 
+
     </div>
+
 
     <div class="stats-grid" id="statsGrid"></div>
 
+
     <div class="card">
+
 
       <div class="card-title">Leaderboard</div>
 
+
       <div style="overflow-x:auto;">
+
 
         <table><thead><tr><th>Rank</th><th>Player</th><th>Return</th><th>Picks</th><th>Best Pick</th><th></th></tr></thead><tbody id="leaderboardBody"><tr><td colspan="6" class="loading">Loading leaderboard</td></tr></tbody></table>
 
+
       </div>
+
 
     </div>
 
+
   </div>
+
+
 
 
 
   <!-- MY PICKS -->
 
+
   <div class="page" id="page-picks">
+
 
     <div class="card">
 
+
       <div class="card-title">My Portfolio (<span id="pickCount">0</span>/10 picks)</div>
+
 
       <div class="portfolio-summary" id="portfolioSummary" style="display:none;"></div>
 
+
       <div class="picks-grid" id="picksGrid"><div class="loading">Loading picks</div></div>
+
 
       <div class="add-section" id="addPickSection">
 
+
         <div class="search-wrap">
+
 
           <input type="text" id="tickerSearch" placeholder="Search ticker (e.g. AAPL, BTC, SPY)..." autocomplete="off">
 
+
           <div class="search-results" id="searchResults"></div>
 
+
         </div>
+
 
         <div class="flex-row">
 
+
           <select id="pickType" style="max-width:130px;"><option value="stock">Stock</option><option value="etf">ETF</option><option value="crypto">Crypto</option></select>
+
 
           <input type="text" id="pickName" placeholder="Company name" style="max-width:200px;">
 
+
           <button class="btn btn-primary btn-sm" id="addPickBtn">+ Add Pick</button>
+
 
         </div>
 
+
       </div>
+
 
     </div>
 
+
   </div>
+
+
 
 
 
   <!-- HISTORY -->
 
-  <div class="page" id="page-history">
+
+  <div class="page" id="page-leagues">
+
+
+    <!-- Create / Join -->
 
     <div class="card">
 
-      <div class="card-title">Past Competitions</div>
 
-      <div id="historyList"><div class="loading">Loading history</div></div>
+      <div class="card-title">Create or Join a League</div>
+
+
+      <div style="display:flex;gap:12px;flex-wrap:wrap;">
+
+
+        <button class="btn btn-primary" id="showCreateLeague">+ Create League</button>
+
+
+        <button class="btn btn-outline" id="showJoinLeague">Join League</button>
+
+
+      </div>
+
+
+
+
+
+      <!-- Create League Form (hidden by default) -->
+
+
+      <div id="createLeagueForm" style="display:none;margin-top:16px;border-top:1px solid var(--border);padding-top:16px;">
+
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+
+
+          <div class="form-group"><label>League Name</label><input type="text" id="leagueName" placeholder="e.g. Office Pool" maxlength="40"></div>
+
+
+          <div class="form-group"><label>Password</label><input type="text" id="leaguePassword" placeholder="Friends use this to join"></div>
+
+
+          <div class="form-group"><label>Start Date</label><input type="date" id="leagueStart"></div>
+
+
+          <div class="form-group"><label>End Date</label><input type="date" id="leagueEnd"></div>
+
+
+          <div class="form-group"><label>Max Players</label><input type="number" id="leagueMaxPlayers" value="20" min="2" max="100"></div>
+
+
+          <div class="form-group"><label>Max Picks per Player</label><input type="number" id="leagueMaxPicks" value="10" min="1" max="20"></div>
+
+
+        </div>
+
+
+        <button class="btn btn-primary" id="createLeagueBtn" style="margin-top:12px;">Create League</button>
+
+
+      </div>
+
+
+
+
+
+      <!-- Join League Form (hidden by default) -->
+
+
+      <div id="joinLeagueForm" style="display:none;margin-top:16px;border-top:1px solid var(--border);padding-top:16px;">
+
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+
+
+          <div class="form-group"><label>League ID</label><input type="number" id="joinLeagueId" placeholder="Ask the creator for the ID"></div>
+
+
+          <div class="form-group"><label>League Password</label><input type="text" id="joinLeaguePassword" placeholder="Enter league password"></div>
+
+
+        </div>
+
+
+        <button class="btn btn-primary" id="joinLeagueBtn" style="margin-top:12px;">Join League</button>
+
+
+      </div>
+
 
     </div>
 
+
+
+
+
+    <!-- My Leagues List -->
+
+
+    <div class="card">
+
+
+      <div class="card-title">My Leagues</div>
+
+
+      <div id="myLeaguesList"><p style="color:var(--gray);">Loading...</p></div>
+
+
+    </div>
+
+
+
+
+
+    <!-- League Detail (shown when viewing a specific league) -->
+
+
+    <div class="card" id="leagueDetail" style="display:none;">
+
+
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+
+
+        <div>
+
+
+          <h3 id="leagueDetailName" style="font-size:18px;"></h3>
+
+
+          <p id="leagueDetailInfo" style="color:var(--gray);font-size:12px;"></p>
+
+
+        </div>
+
+
+        <button class="btn btn-outline" id="leagueBackBtn" style="font-size:11px;">Back to Leagues</button>
+
+
+      </div>
+
+
+
+
+
+      <!-- League Leaderboard -->
+
+
+      <div class="card-title" style="margin-top:12px;">Leaderboard</div>
+
+
+      <table id="leagueLeaderboardTable"><thead><tr><th>#</th><th>Player</th><th>Picks</th><th>Avg Return</th></tr></thead><tbody></tbody></table>
+
+
+
+
+
+      <!-- League Picks -->
+
+
+      <div class="card-title" style="margin-top:24px;">My Picks in this League</div>
+
+
+      <div id="leaguePicksList"></div>
+
+
+      <div class="add-section" style="margin-top:12px;">
+
+
+        <div style="display:flex;gap:8px;">
+
+
+          <input type="text" id="leagueTickerSearch" placeholder="Search ticker (e.g. AAPL, BTC)">
+
+
+          <button class="btn btn-primary" id="addLeaguePickBtn">+ Add</button>
+
+
+        </div>
+
+
+        <div class="search-results" id="leagueSearchResults"></div>
+
+
+      </div>
+
+
+    </div>
+
+
   </div>
+
+
+
+
+
+  <div class="page" id="page-history">
+
+
+    <div class="card">
+
+
+      <div class="card-title">Past Competitions</div>
+
+
+      <div id="historyList"><div class="loading">Loading history</div></div>
+
+
+    </div>
+
+
+  </div>
+
+
 
 
 
   <!-- RULES -->
 
+
   <div class="page" id="page-rules">
+
 
     <div class="card">
 
+
       <div class="card-title">Competition Rules</div>
+
 
       <ul class="rules-list">
 
+
         <li><strong>Picks:</strong> Each player selects 3-10 investments (stocks, ETFs, or crypto).</li>
+
 
         <li><strong>Drafting Period:</strong> 1 month before the competition starts, you can begin adding picks. Add, remove, or change picks freely until lock date.</li>
 
+
         <li><strong>Lock Date:</strong> On competition start, all picks are frozen and entry prices are recorded at market close.</li>
+
 
         <li><strong>Scoring:</strong> Equal-weighted average % return across all picks. If you pick 5 stocks, each counts for 20%.</li>
 
+
         <li><strong>Quarterly Competitions:</strong> Each quarter (Q1-Q4) runs independently. Winners crowned at quarter end.</li>
+
 
         <li><strong>Yearly Championship:</strong> Your best 3 quarterly performances are averaged for the yearly leaderboard.</li>
 
+
         <li><strong>Eligible Tickers:</strong> All US-listed stocks and ETFs. Top-50 crypto by market cap. No penny stocks under $1.</li>
+
 
         <li><strong>Tie Breaker:</strong> Player with fewer picks wins (more concentrated = more conviction).</li>
 
+
         <li><strong>Minimum Picks:</strong> You need at least 3 picks by lock date or you are removed from the competition.</li>
+
 
       </ul>
 
+
     </div>
+
 
   </div>
 
+
 </main>
+
+
 
 
 
@@ -576,643 +1060,968 @@
 
 
 
+
+
 <script>
+
 
 window.addEventListener('unhandledrejection', function(e) { e.preventDefault(); });
 
+
 // ==================== API CLIENT ====================
+
 
 var API_BASE = window.location.origin + '/api';
 
+
 var IS_PREVIEW = (window.location.origin.indexOf('localhost') === -1 && window.location.origin.indexOf('railway') === -1 && window.location.origin.indexOf('nobull') === -1);
+
 
 var token = null;
 
+
 var currentUser = null;
 
+
 var activeCompetition = null;
+
 
 var myPicks = [];
 
 
 
+
+
 function api(method, path, body) {
+
 
   var opts = {
 
+
     method: method,
+
 
     headers: { 'Content-Type': 'application/json' }
 
+
   };
+
 
   if (token) opts.headers['Authorization'] = 'Bearer ' + token;
 
+
   if (body) opts.body = JSON.stringify(body);
+
 
   
 
+
   return fetch(API_BASE + path, opts).then(function(res) {
+
 
     return res.json().then(function(data) {
 
+
       if (!res.ok) throw new Error(data.error || 'Request failed');
+
 
       return data;
 
+
     });
+
 
   }).catch(function(err) {
 
+
     return Promise.reject(err);
+
 
   });
 
+
 }
+
+
 
 
 
 // ==================== AUTH ====================
 
+
 function login() {
+
 
   var username = document.getElementById('loginUsername').value.trim();
 
+
   var password = document.getElementById('loginPassword').value;
+
 
   if (!username || !password) { showToast('Enter username and password', true); return; }
 
 
 
+
+
   api('POST', '/auth/login', { username: username, password: password })
+
 
     .then(function(data) {
 
+
       token = data.token;
+
 
       currentUser = data.user;
 
+
       saveSession();
+
 
       showApp();
 
+
       loadDashboard();
+
 
       showToast('Welcome back, ' + currentUser.display_name + '!');
 
+
     })
+
 
     .catch(function(err) { showToast(err.message, true); });
 
+
 }
+
+
 
 
 
 function register() {
 
+
   var display_name = document.getElementById('regDisplayName').value.trim();
+
 
   var username = document.getElementById('regUsername').value.trim();
 
+
   var pw = document.getElementById('regPassword').value;
+
 
   var passwordConfirm = document.getElementById('regPasswordConfirm').value;
 
+
   if (!display_name || !username || !pw || !passwordConfirm) {
+
 
     showToast('All fields required', true); return;
 
+
   }
+
 
   if (pw !== passwordConfirm) {
 
+
     showToast('Passwords do not match', true); return;
 
+
   }
+
 
   if (pw.length < 6) {
 
+
     showToast('Password must be at least 6 characters', true); return;
 
+
   }
+
+
 
 
 
   api('POST', '/auth/register', { username: username, password: pw, display_name: display_name })
 
+
     .then(function(data) {
+
 
       token = data.token;
 
+
       currentUser = data.user;
+
 
       saveSession();
 
+
       showApp();
+
 
       loadDashboard();
 
+
       showToast('Account created! Start picking stocks.');
+
 
     })
 
+
     .catch(function(err) { showToast(err.message, true); });
 
+
 }
+
+
 
 
 
 function logout() {
 
+
   token = null;
+
 
   currentUser = null;
 
+
   activeCompetition = null;
+
 
   myPicks = [];
 
+
   clearSession();
+
 
   document.getElementById('authPage').style.display = 'flex';
 
+
   document.getElementById('mainContent').style.display = 'none';
+
 
   document.getElementById('mainNav').style.display = 'none';
 
+
   document.getElementById('userBadge').style.display = 'none';
+
 
   document.getElementById('logoutBtn').style.display = 'none';
 
+
 }
+
+
 
 
 
 function showApp() {
 
+
   document.getElementById('authPage').style.display = 'none';
+
 
   document.getElementById('mainContent').style.display = 'block';
 
+
   document.getElementById('mainNav').style.display = 'block';
+
 
   document.getElementById('userBadge').style.display = 'inline-block';
 
+
   document.getElementById('logoutBtn').style.display = 'inline-flex';
+
 
   document.getElementById('displayName').textContent = currentUser.display_name;
 
+
 }
+
+
 
 
 
 // ==================== LOAD DATA ====================
 
+
 function loadDashboard() {
+
 
   if (IS_PREVIEW) return;
 
+
+  loadMyLeagues();
+
+
   loadCompetition();
+
 
   loadLeaderboard();
 
+
   loadMyPicks();
+
 
   loadHistory();
 
+
   // Connect WebSocket after a brief delay to ensure competition is loaded
+
 
   setTimeout(connectWebSocket, 1000);
 
+
 }
+
+
 
 
 
 function loadCompetition() {
 
+
   api('GET', '/competitions/active').then(function(data) {
+
 
     activeCompetition = data.competition;
 
+
     renderCompetitionBanner();
+
 
   }).catch(function() {
 
+
     document.getElementById('compName').textContent = 'No active competition';
+
 
   });
 
+
 }
+
+
 
 
 
 function loadLeaderboard() {
 
+
   if (!activeCompetition) {
+
 
     // Try loading competition first, then leaderboard
 
+
     api('GET', '/competitions/active').then(function(data) {
+
 
       activeCompetition = data.competition;
 
+
       renderCompetitionBanner();
+
 
       return api('GET', '/competitions/' + activeCompetition.id + '/leaderboard');
 
+
     }).then(function(data) {
+
 
       renderLeaderboard(data.leaderboard);
 
+
     }).catch(function() {
+
 
       document.getElementById('leaderboardBody').innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--gray);">No data yet</td></tr>';
 
+
     });
+
 
   } else {
 
+
     api('GET', '/competitions/' + activeCompetition.id + '/leaderboard').then(function(data) {
+
 
       renderLeaderboard(data.leaderboard);
 
+
     }).catch(function() {
+
 
       document.getElementById('leaderboardBody').innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--gray);">No data yet</td></tr>';
 
+
     });
+
 
   }
 
+
 }
+
+
 
 
 
 function loadMyPicks() {
 
+
   if (!activeCompetition) {
+
 
     setTimeout(loadMyPicks, 1000);
 
+
     return;
+
 
   }
 
+
   api('GET', '/picks?competition_id=' + activeCompetition.id).then(function(data) {
+
 
     myPicks = data.picks;
 
+
     renderPicks();
+
 
   }).catch(function() {
 
+
     document.getElementById('picksGrid').innerHTML = '<div class="empty-state">Could not load picks</div>';
+
 
   });
 
+
 }
+
+
 
 
 
 function loadHistory() {
 
+
   api('GET', '/competitions').then(function(data) {
+
 
     var ended = data.competitions.filter(function(c) { return c.status === 'ended'; });
 
+
     renderHistory(ended);
+
 
   }).catch(function() {});
 
+
 }
+
+
 
 
 
 // ==================== RENDER ====================
 
+
 function renderCompetitionBanner() {
+
 
   var c = activeCompetition;
 
+
   document.getElementById('compName').textContent = c.name + ' Competition';
+
 
   document.getElementById('compDates').textContent = formatDate(c.lock_date) + ' - ' + formatDate(c.end_date);
 
+
   
+
 
   var badge = document.getElementById('compStatusBadge');
 
+
   badge.textContent = c.status === 'drafting' ? 'Drafting Phase' : c.status === 'active' ? 'Active' : c.status;
+
 
   badge.className = 'status-badge ' + c.status;
 
 
 
+
+
   var lockDate = new Date(c.lock_date);
+
 
   var now = new Date();
 
+
   var diff = Math.ceil((lockDate - now) / (1000 * 60 * 60 * 24));
+
 
   
 
+
   if (c.status === 'drafting') {
+
 
     document.getElementById('countdownDays').textContent = Math.max(0, diff);
 
+
     document.getElementById('countdownLabel').textContent = 'Days until lock';
+
 
   } else if (c.status === 'active') {
 
+
     var endDate = new Date(c.end_date);
+
 
     var daysLeft = Math.ceil((endDate - now) / (1000 * 60 * 60 * 24));
 
+
     document.getElementById('countdownDays').textContent = Math.max(0, daysLeft);
+
 
     document.getElementById('countdownLabel').textContent = 'Days remaining';
 
+
   } else {
+
 
     document.getElementById('countdownDays').textContent = 'DONE';
 
+
     document.getElementById('countdownLabel').textContent = 'Competition ended';
 
+
   }
+
+
 
 
 
   // Stats
 
+
   var stats = '';
+
 
   stats += '<div class="stat-card"><div class="stat-value" style="color:var(--white);">' + (c.player_count || 0) + '</div><div class="stat-label">Players</div></div>';
 
+
   stats += '<div class="stat-card"><div class="stat-value" style="color:var(--yellow);">' + (c.total_picks || 0) + '</div><div class="stat-label">Total Picks</div></div>';
+
 
   stats += '<div class="stat-card"><div class="stat-value" style="color:var(--white);">' + c.status + '</div><div class="stat-label">Status</div></div>';
 
+
   document.getElementById('statsGrid').innerHTML = stats;
 
+
 }
+
+
 
 
 
 function renderLeaderboard(leaderboard) {
 
+
   if (!leaderboard || leaderboard.length === 0) {
+
 
     document.getElementById('leaderboardBody').innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--gray);padding:24px;">No players yet. Be the first to pick!</td></tr>';
 
+
     return;
 
+
   }
+
+
 
 
 
   var maxAbs = 1;
 
+
   for (var i = 0; i < leaderboard.length; i++) {
 
+
     if (Math.abs(leaderboard[i].avg_return) > maxAbs) maxAbs = Math.abs(leaderboard[i].avg_return);
+
 
   }
 
 
 
+
+
   var html = '';
+
 
   for (var i = 0; i < leaderboard.length; i++) {
 
+
     var p = leaderboard[i];
+
 
     var rankClass = i < 3 ? ' rank-' + (i + 1) : '';
 
+
     var retClass = p.avg_return >= 0 ? 'positive' : 'negative';
+
 
     var retStr = (p.avg_return >= 0 ? '+' : '') + p.avg_return.toFixed(2) + '%';
 
+
     var barWidth = Math.round(Math.abs(p.avg_return) / maxAbs * 100);
+
 
     var barColor = p.avg_return >= 0 ? 'var(--green)' : 'var(--red)';
 
+
     var isMe = currentUser && p.user_id === currentUser.id;
 
+
     var rowStyle = isMe ? ' style="background:rgba(220,38,38,0.06);"' : '';
+
 
     var nameDisplay = p.display_name + (isMe ? ' (You)' : '');
 
 
 
+
+
     html += '<tr' + rowStyle + '>';
+
 
     html += '<td class="rank' + rankClass + '">' + p.rank + '</td>';
 
+
     html += '<td style="font-weight:600;">' + nameDisplay + '</td>';
+
 
     html += '<td class="mono ' + retClass + '">' + retStr + '</td>';
 
+
     html += '<td style="color:var(--gray);font-size:12px;">' + p.pick_count + '</td>';
+
 
     html += '<td style="color:var(--gray);font-size:11px;">' + (p.best_pick || '-') + '</td>';
 
+
     html += '<td><div class="perf-bar"><div class="perf-bar-fill" style="width:' + barWidth + '%;background:' + barColor + ';"></div></div></td>';
+
 
     html += '</tr>';
 
+
   }
+
 
   document.getElementById('leaderboardBody').innerHTML = html;
 
+
 }
+
+
 
 
 
 function renderPicks() {
 
+
   var grid = document.getElementById('picksGrid');
 
+
   var summary = document.getElementById('portfolioSummary');
+
 
   document.getElementById('pickCount').textContent = myPicks.length;
 
 
 
+
+
   // Hide add section if competition is locked
 
+
   var canEdit = activeCompetition && activeCompetition.status === 'drafting';
+
 
   document.getElementById('addPickSection').style.display = canEdit && myPicks.length < 10 ? 'block' : 'none';
 
 
 
+
+
   if (myPicks.length === 0) {
+
 
     summary.style.display = 'none';
 
+
     grid.innerHTML = '<div class="empty-state">No picks yet. Search for a ticker below to build your portfolio.</div>';
+
 
     return;
 
+
   }
+
+
 
 
 
   // Portfolio summary
 
+
   var totalRet = 0; var bestPick = null; var worstPick = null;
+
 
   for (var i = 0; i < myPicks.length; i++) {
 
+
     var r = myPicks[i].return_pct || 0;
+
 
     totalRet += r;
 
+
     if (!bestPick || r > bestPick.return_pct) bestPick = myPicks[i];
+
 
     if (!worstPick || r < worstPick.return_pct) worstPick = myPicks[i];
 
+
   }
+
 
   var avgRet = totalRet / myPicks.length;
 
+
   var avgClass = avgRet >= 0 ? 'positive' : 'negative';
+
 
   var avgStr = (avgRet >= 0 ? '+' : '') + avgRet.toFixed(2) + '%';
 
 
 
+
+
   summary.style.display = 'grid';
+
 
   summary.innerHTML = '<div class="portfolio-stat"><div class="val ' + avgClass + '">' + avgStr + '</div><div class="lbl">Avg Return</div></div>' +
 
+
     '<div class="portfolio-stat"><div class="val positive">' + (bestPick ? bestPick.symbol : '-') + '</div><div class="lbl">Best +' + (bestPick ? bestPick.return_pct.toFixed(1) : '0') + '%</div></div>' +
 
+
     '<div class="portfolio-stat"><div class="val negative">' + (worstPick ? worstPick.symbol : '-') + '</div><div class="lbl">Worst ' + (worstPick ? worstPick.return_pct.toFixed(1) : '0') + '%</div></div>' +
+
 
     '<div class="portfolio-stat"><div class="val" style="color:var(--white);">' + myPicks.length + '</div><div class="lbl">Total Picks</div></div>';
 
 
 
+
+
   // Pick cards
+
 
   var html = '';
 
+
   for (var i = 0; i < myPicks.length; i++) {
+
 
     var pick = myPicks[i];
 
+
     var retClass = (pick.return_pct || 0) >= 0 ? 'positive' : 'negative';
+
 
     var retStr = ((pick.return_pct || 0) >= 0 ? '+' : '') + (pick.return_pct || 0).toFixed(1) + '%';
 
+
     var priceInfo = pick.entry_price ? '$' + pick.entry_price.toFixed(2) : 'Pending';
+
 
     if (pick.current_price) priceInfo += ' &rarr; $' + pick.current_price.toFixed(2);
 
 
 
+
+
     html += '<div class="pick-card"><div>';
+
 
     html += '<div class="pick-ticker">' + pick.symbol + '</div>';
 
+
     html += '<div class="pick-name">' + pick.name + '</div>';
+
 
     html += '<span class="pick-type pick-type-' + pick.type + '">' + pick.type + '</span>';
 
+
     html += '</div><div style="text-align:right;">';
+
 
     html += '<div class="mono ' + retClass + '" style="font-size:17px;">' + retStr + '</div>';
 
+
     html += '<div class="pick-price">' + priceInfo + '</div>';
+
 
     if (canEdit && !pick.locked) {
 
+
       html += '<button class="btn-remove" data-id="' + pick.id + '">Remove</button>';
+
 
     }
 
+
     html += '</div></div>';
 
+
   }
+
 
   grid.innerHTML = html;
 
 
 
+
+
   // Attach remove handlers
+
 
   var removeBtns = grid.querySelectorAll('.btn-remove');
 
+
   for (var i = 0; i < removeBtns.length; i++) {
+
 
     (function(btn) {
 
+
       btn.addEventListener('click', function() {
+
 
         removePick(btn.getAttribute('data-id'));
 
+
       });
+
 
     })(removeBtns[i]);
 
+
   }
 
+
 }
+
+
 
 
 
 function renderHistory(competitions) {
 
+
   var list = document.getElementById('historyList');
+
 
   if (!competitions || competitions.length === 0) {
 
+
     list.innerHTML = '<div class="empty-state">No past competitions yet.</div>';
+
 
     return;
 
+
   }
+
 
   var html = '';
 
+
   for (var i = 0; i < competitions.length; i++) {
+
 
     var c = competitions[i];
 
+
     html += '<div class="history-item">';
+
 
     html += '<div><div style="font-weight:600;">' + c.name + '</div><div style="font-size:12px;color:var(--gray);">' + formatDate(c.lock_date) + ' - ' + formatDate(c.end_date) + '</div></div>';
 
+
     html += '<div style="text-align:center;"><div style="font-size:11px;color:var(--gray);">Players</div><div style="font-weight:600;">' + (c.player_count || 0) + '</div></div>';
+
 
     html += '<div style="text-align:right;"><div style="font-size:11px;color:var(--gray);">Total Picks</div><div style="font-weight:600;">' + (c.total_picks || 0) + '</div></div>';
 
+
     html += '</div>';
+
 
   }
 
+
   list.innerHTML = html;
+
 
 }
 
 
 
+
+
 // ==================== ACTIONS ====================
+
 
 function addPick() {
 
+
   if (!activeCompetition) { showToast('No active competition', true); return; }
+
 
   if (myPicks.length >= 10) { showToast('Maximum 10 picks!', true); return; }
 
 
 
+
+
   var symbol = document.getElementById('tickerSearch').value.toUpperCase().trim();
+
 
   var type = document.getElementById('pickType').value;
 
+
   var name = document.getElementById('pickName').value.trim() || symbol;
+
+
 
 
 
@@ -1220,127 +2029,191 @@ function addPick() {
 
 
 
+
+
   api('POST', '/picks', {
+
 
     symbol: symbol,
 
+
     name: name,
+
 
     type: type,
 
+
     competition_id: activeCompetition.id
+
 
   }).then(function(data) {
 
+
     myPicks.push(data.pick);
+
 
     renderPicks();
 
+
     loadLeaderboard(); // Refresh leaderboard
+
 
     document.getElementById('tickerSearch').value = '';
 
+
     document.getElementById('pickName').value = '';
+
 
     showToast('Added ' + symbol + ' to your portfolio!');
 
+
   }).catch(function(err) {
+
 
     showToast(err.message, true);
 
+
   });
 
+
 }
+
+
 
 
 
 function removePick(pickId) {
 
+
   api('DELETE', '/picks/' + pickId).then(function() {
+
 
     myPicks = myPicks.filter(function(p) { return p.id != pickId; });
 
+
     renderPicks();
+
 
     loadLeaderboard();
 
+
     showToast('Pick removed');
+
 
   }).catch(function(err) {
 
+
     showToast(err.message, true);
+
 
   });
 
+
 }
+
+
 
 
 
 // ==================== UTILITIES ====================
 
+
 function formatDate(dateStr) {
+
 
   if (!dateStr) return '';
 
+
   var d = new Date(dateStr);
+
 
   var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
+
   return months[d.getMonth()] + ' ' + d.getDate() + ', ' + d.getFullYear();
 
+
 }
+
+
 
 
 
 function showToast(msg, isError) {
 
+
   var toast = document.getElementById('toast');
+
 
   toast.textContent = msg;
 
+
   toast.className = 'toast show' + (isError ? ' error' : '');
 
+
   setTimeout(function() { toast.className = 'toast'; }, 3000);
+
 
 }
 
 
 
+
+
 // ==================== EVENT SETUP ====================
+
 
 function setupEvents() {
 
+
   document.getElementById('loginBtn').addEventListener('click', login);
+
 
   document.getElementById('registerBtn').addEventListener('click', register);
 
+
   document.getElementById('logoutBtn').addEventListener('click', logout);
+
 
   document.getElementById('addPickBtn').addEventListener('click', addPick);
 
 
 
+
+
   document.getElementById('showRegister').addEventListener('click', function() {
+
 
     document.getElementById('loginForm').style.display = 'none';
 
+
     document.getElementById('registerForm').style.display = 'block';
 
+
   });
+
 
   document.getElementById('showLogin').addEventListener('click', function() {
 
+
     document.getElementById('registerForm').style.display = 'none';
+
 
     document.getElementById('loginForm').style.display = 'block';
 
+
   });
+
+
 
 
 
   // Enter key for login/register
 
+
   document.getElementById('loginPassword').addEventListener('keydown', function(e) { if (e.key === 'Enter') login(); });
+
+
 
 
 
@@ -1348,270 +2221,747 @@ function setupEvents() {
 
 
 
+
+
   // Nav tabs
+
 
   var tabs = document.querySelectorAll('.nav-tab');
 
+
   for (var i = 0; i < tabs.length; i++) {
+
 
     (function(tab) {
 
+
       tab.addEventListener('click', function() {
+
 
         var allTabs = document.querySelectorAll('.nav-tab');
 
+
         var allPages = document.querySelectorAll('.page');
+
 
         for (var j = 0; j < allTabs.length; j++) allTabs[j].classList.remove('active');
 
+
         for (var j = 0; j < allPages.length; j++) allPages[j].classList.remove('active');
+
 
         tab.classList.add('active');
 
+
         document.getElementById('page-' + tab.getAttribute('data-page')).classList.add('active');
+
 
       });
 
+
     })(tabs[i]);
 
+
   }
+
+
 
 
 
   // Fallback: auto-refresh leaderboard every 60s if WebSocket disconnects
 
+
   setInterval(function() {
+
 
     if (token && activeCompetition && !ws) loadLeaderboard();
 
+
   }, 60000);
 
+
 }
+
+
 
 
 
 // ==================== WEBSOCKET ====================
 
+
 var ws = null;
+
 
 var wsReconnectTimer = null;
 
 
 
+
+
 function connectWebSocket() {
+
 
   if (!activeCompetition) return;
 
+
   
+
 
   var protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
 
+
   var wsUrl = protocol + '//' + window.location.host + '/ws';
+
 
   
 
+
   try {
 
+
     ws = new WebSocket(wsUrl);
+
 
   } catch(e) { return; }
 
 
 
+
+
   ws.onopen = function() {
+
 
     console.log('[WS] Connected');
 
+
     // Subscribe to active competition
+
 
     ws.send(JSON.stringify({
 
+
       type: 'subscribe',
+
 
       competitionId: activeCompetition.id,
 
+
       userId: currentUser ? currentUser.id : null
+
 
     }));
 
+
     // Clear reconnect timer
+
 
     if (wsReconnectTimer) { clearTimeout(wsReconnectTimer); wsReconnectTimer = null; }
 
+
   };
+
+
 
 
 
   ws.onmessage = function(event) {
 
+
     try {
+
 
       var msg = JSON.parse(event.data);
 
+
       handleWsMessage(msg);
+
 
     } catch(e) {}
 
+
   };
+
+
 
 
 
   ws.onclose = function() {
 
+
     console.log('[WS] Disconnected, reconnecting in 5s...');
+
 
     ws = null;
 
+
     wsReconnectTimer = setTimeout(connectWebSocket, 5000);
 
+
   };
+
+
 
 
 
   ws.onerror = function() {
 
+
     if (ws) ws.close();
+
 
   };
 
+
 }
+
+
 
 
 
 function handleWsMessage(msg) {
 
+
   switch(msg.type) {
+
 
     case 'leaderboard_update':
 
+
       if (msg.competitionId === activeCompetition.id) {
+
 
         renderLeaderboard(msg.leaderboard);
 
+
       }
 
+
       break;
+
 
     case 'pick_change':
 
+
       // Refresh own picks if someone else changed theirs (leaderboard shift)
+
 
       if (msg.competitionId === activeCompetition.id) {
 
+
         loadMyPicks();
+
 
       }
 
+
       break;
+
 
     case 'competition_status':
 
+
       // Reload everything if competition status changed
+
 
       loadCompetition();
 
+
       loadLeaderboard();
+
 
       loadMyPicks();
 
+
       break;
+
 
     case 'price_update':
 
+
       // Prices changed, reload picks to show new returns
+
 
       loadMyPicks();
 
+
       break;
+
 
   }
 
+
 }
+
+
 
 
 
 // ==================== SESSION PERSISTENCE ====================
 
+
 function saveSession() {
+
 
   try {
 
+
     var session = JSON.stringify({ token: token, user: currentUser });
+
 
     document.cookie = 'nobull_session=' + encodeURIComponent(session) + ';path=/;max-age=2592000;SameSite=Lax';
 
+
   } catch(e) {}
 
+
 }
+
+
 
 
 
 function loadSession() {
 
+
   try {
+
 
     var cookies = document.cookie.split(';');
 
+
     for (var i = 0; i < cookies.length; i++) {
+
 
       var c = cookies[i].trim();
 
+
       if (c.indexOf('nobull_session=') === 0) {
+
 
         var session = JSON.parse(decodeURIComponent(c.substring(15)));
 
+
         if (session && session.token && session.user) {
+
 
           token = session.token;
 
+
           currentUser = session.user;
+
 
           return true;
 
+
         }
+
 
       }
 
+
     }
+
 
   } catch(e) {}
 
+
   return false;
 
+
 }
+
+
 
 
 
 function clearSession() {
 
+
   document.cookie = 'nobull_session=;path=/;max-age=0';
+
 
 }
 
 
 
+
+
 // ==================== INIT ====================
 
+
 setupEvents();
+
+setupLeagueEvents();
+
+
 
 
 
 // Auto-login from saved session
 
+
 try {
+
 
   if (loadSession()) {
 
+
     showApp();
+
 
     loadDashboard();
 
+
   }
+
 
 } catch(e) { /* sandbox safe */ }
 
+
+
+
+// ==================== LEAGUES ====================
+
+var myLeagues = [];
+
+var activeLeague = null;
+
+
+
+function setupLeagueEvents() {
+
+  document.getElementById('showCreateLeague').addEventListener('click', function() {
+
+    var form = document.getElementById('createLeagueForm');
+
+    form.style.display = form.style.display === 'none' ? 'block' : 'none';
+
+    document.getElementById('joinLeagueForm').style.display = 'none';
+
+  });
+
+  document.getElementById('showJoinLeague').addEventListener('click', function() {
+
+    var form = document.getElementById('joinLeagueForm');
+
+    form.style.display = form.style.display === 'none' ? 'block' : 'none';
+
+    document.getElementById('createLeagueForm').style.display = 'none';
+
+  });
+
+  document.getElementById('createLeagueBtn').addEventListener('click', createLeague);
+
+  document.getElementById('joinLeagueBtn').addEventListener('click', joinLeague);
+
+  document.getElementById('leagueBackBtn').addEventListener('click', function() {
+
+    document.getElementById('leagueDetail').style.display = 'none';
+
+    activeLeague = null;
+
+  });
+
+  document.getElementById('addLeaguePickBtn').addEventListener('click', addLeaguePick);
+
+}
+
+
+
+function loadMyLeagues() {
+
+  api('GET', '/leagues').then(function(data) {
+
+    myLeagues = data.leagues;
+
+    renderMyLeagues();
+
+  }).catch(function() {
+
+    document.getElementById('myLeaguesList').innerHTML = '<p style="color:var(--gray);">Could not load leagues.</p>';
+
+  });
+
+}
+
+
+
+function renderMyLeagues() {
+
+  var container = document.getElementById('myLeaguesList');
+
+  if (myLeagues.length === 0) {
+
+    container.innerHTML = '<p style="color:var(--gray);">No leagues yet. Create one or join a friend\'s league!</p>';
+
+    return;
+
+  }
+
+  var html = '<table><thead><tr><th>League</th><th>Players</th><th>Dates</th><th>Status</th><th></th></tr></thead><tbody>';
+
+  myLeagues.forEach(function(l) {
+
+    var statusClass = l.status === 'active' ? 'positive' : (l.status === 'ended' ? 'negative' : '');
+
+    html += '<tr>';
+
+    html += '<td><strong>' + l.name + '</strong><br><span style="font-size:10px;color:var(--gray);">ID: ' + l.id + '</span></td>';
+
+    html += '<td>' + l.player_count + '/' + l.max_players + '</td>';
+
+    html += '<td style="font-size:11px;">' + l.start_date + ' to ' + l.end_date + '</td>';
+
+    html += '<td class="' + statusClass + '" style="text-transform:capitalize;">' + l.status + '</td>';
+
+    html += '<td><button class="btn btn-outline" style="font-size:11px;padding:4px 10px;" onclick="viewLeague(' + l.id + ')">View</button></td>';
+
+    html += '</tr>';
+
+  });
+
+  html += '</tbody></table>';
+
+  container.innerHTML = html;
+
+}
+
+
+
+function createLeague() {
+
+  var name = document.getElementById('leagueName').value.trim();
+
+  var pw = document.getElementById('leaguePassword').value.trim();
+
+  var start = document.getElementById('leagueStart').value;
+
+  var end = document.getElementById('leagueEnd').value;
+
+  var maxPlayers = parseInt(document.getElementById('leagueMaxPlayers').value) || 20;
+
+  var maxPicks = parseInt(document.getElementById('leagueMaxPicks').value) || 10;
+
+
+
+  if (!name || !pw || !start || !end) {
+
+    showToast('All fields required', true); return;
+
+  }
+
+
+
+  api('POST', '/leagues', { name: name, league_password: pw, start_date: start, end_date: end, max_players: maxPlayers, max_picks: maxPicks })
+
+    .then(function(data) {
+
+      showToast('League created! ID: ' + data.league.id + ' — share the ID and password with friends.');
+
+      document.getElementById('createLeagueForm').style.display = 'none';
+
+      document.getElementById('leagueName').value = '';
+
+      document.getElementById('leaguePassword').value = '';
+
+      loadMyLeagues();
+
+    })
+
+    .catch(function(err) { showToast(err.message, true); });
+
+}
+
+
+
+function joinLeague() {
+
+  var id = document.getElementById('joinLeagueId').value.trim();
+
+  var pw = document.getElementById('joinLeaguePassword').value.trim();
+
+  if (!id || !pw) { showToast('League ID and password required', true); return; }
+
+
+
+  api('POST', '/leagues/join', { league_id: parseInt(id), league_password: pw })
+
+    .then(function(data) {
+
+      showToast(data.message);
+
+      document.getElementById('joinLeagueForm').style.display = 'none';
+
+      document.getElementById('joinLeagueId').value = '';
+
+      document.getElementById('joinLeaguePassword').value = '';
+
+      loadMyLeagues();
+
+    })
+
+    .catch(function(err) { showToast(err.message, true); });
+
+}
+
+
+
+function viewLeague(leagueId) {
+
+  activeLeague = leagueId;
+
+  document.getElementById('leagueDetail').style.display = 'block';
+
+
+
+  // Load league info
+
+  api('GET', '/leagues/' + leagueId).then(function(data) {
+
+    document.getElementById('leagueDetailName').textContent = data.league.name;
+
+    document.getElementById('leagueDetailInfo').textContent = data.league.start_date + ' to ' + data.league.end_date + ' | ' + data.members.length + '/' + data.league.max_players + ' players | Status: ' + data.league.status;
+
+  });
+
+
+
+  // Load leaderboard
+
+  api('GET', '/leagues/' + leagueId + '/leaderboard').then(function(data) {
+
+    var tbody = document.querySelector('#leagueLeaderboardTable tbody');
+
+    tbody.innerHTML = '';
+
+    data.leaderboard.forEach(function(p) {
+
+      var retClass = p.avg_return >= 0 ? 'positive' : 'negative';
+
+      tbody.innerHTML += '<tr><td class="rank rank-' + p.rank + '">' + p.rank + '</td><td>' + p.display_name + '</td><td>' + p.pick_count + '</td><td class="mono ' + retClass + '">' + (p.avg_return >= 0 ? '+' : '') + p.avg_return + '%</td></tr>';
+
+    });
+
+  });
+
+
+
+  // Load my picks
+
+  loadLeaguePicks(leagueId);
+
+}
+
+
+
+function loadLeaguePicks(leagueId) {
+
+  api('GET', '/leagues/' + leagueId + '/picks').then(function(data) {
+
+    var container = document.getElementById('leaguePicksList');
+
+    if (data.picks.length === 0) {
+
+      container.innerHTML = '<p style="color:var(--gray);">No picks yet. Add some below!</p>';
+
+      return;
+
+    }
+
+    var html = '<div class="picks-grid">';
+
+    data.picks.forEach(function(p) {
+
+      var retClass = (p.return_pct || 0) >= 0 ? 'positive' : 'negative';
+
+      html += '<div class="pick-card"><div><div class="pick-ticker">' + p.symbol + '</div><div class="pick-name">' + p.name + '</div><div class="pick-price">Entry: $' + (p.entry_price || 0).toFixed(2) + '</div></div><div style="text-align:right;"><div class="mono ' + retClass + '">' + ((p.return_pct || 0) >= 0 ? '+' : '') + (p.return_pct || 0).toFixed(2) + '%</div><button class="btn btn-outline" style="font-size:10px;padding:2px 8px;margin-top:4px;" onclick="removeLeaguePick(' + leagueId + ',' + p.id + ')">Remove</button></div></div>';
+
+    });
+
+    html += '</div>';
+
+    container.innerHTML = html;
+
+  });
+
+}
+
+
+
+function addLeaguePick() {
+
+  if (!activeLeague) { showToast('Select a league first', true); return; }
+
+  var input = document.getElementById('leagueTickerSearch').value.trim().toUpperCase();
+
+  if (!input) { showToast('Enter a ticker symbol', true); return; }
+
+
+
+  // Try to find in our ticker list, otherwise use as-is
+
+  var found = null;
+
+  if (typeof TICKERS !== 'undefined') {
+
+    for (var i = 0; i < TICKERS.length; i++) {
+
+      if (TICKERS[i].symbol === input) { found = TICKERS[i]; break; }
+
+    }
+
+  }
+
+
+
+  var symbol = input;
+
+  var name = found ? found.name : input;
+
+  var type = found ? found.type : 'stock';
+
+
+
+  api('POST', '/leagues/' + activeLeague + '/picks', { symbol: symbol, name: name, type: type })
+
+    .then(function(data) {
+
+      showToast(data.pick.symbol + ' added at $' + data.pick.entry_price.toFixed(2));
+
+      document.getElementById('leagueTickerSearch').value = '';
+
+      loadLeaguePicks(activeLeague);
+
+    })
+
+    .catch(function(err) { showToast(err.message, true); });
+
+}
+
+
+
+function removeLeaguePick(leagueId, pickId) {
+
+  api('DELETE', '/leagues/' + leagueId + '/picks/' + pickId)
+
+    .then(function() {
+
+      showToast('Pick removed');
+
+      loadLeaguePicks(leagueId);
+
+    })
+
+    .catch(function(err) { showToast(err.message, true); });
+
+}
+
+
+
 </script>
 
+
 </body>
+
 
 </html>
