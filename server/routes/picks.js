@@ -1,5 +1,6 @@
 // routes/picks.js — Stock pick management
 const express = require('express');
+const https = require('https');
 const db = require('../database');
 const { authenticate } = require('../middleware/auth');
 const { broadcastLeaderboard, broadcastPickChange } = require('../websocket');
@@ -22,26 +23,35 @@ const CRYPTO_MAP = {
   'PEPE': 'PEPE-USD'
 };
 
-// Lazy-loaded Yahoo Finance module
-let yahooFinance = null;
+// Fetch price using raw HTTPS to Yahoo Finance v8 API (no ESM import needed)
+function fetchYahooPrice(symbol, type) {
+  return new Promise(function(resolve, reject) {
+    var yahooSymbol = type === 'crypto'
+      ? (CRYPTO_MAP[symbol] || symbol + '-USD')
+      : symbol;
 
-async function loadYahoo() {
-  if (!yahooFinance) {
-    const mod = await import('yahoo-finance2');
-    yahooFinance = mod.default;
-  }
-  return yahooFinance;
-}
+    var url = 'https://query1.finance.yahoo.com/v8/finance/chart/' + encodeURIComponent(yahooSymbol) + '?interval=1d&range=1d';
 
-// Fetch current price from Yahoo Finance
-async function getPrice(symbol, type) {
-  const yf = await loadYahoo();
-  const yahooSymbol = type === 'crypto'
-    ? (CRYPTO_MAP[symbol] || symbol + '-USD')
-    : symbol;
-  const quote = await yf.quote(yahooSymbol);
-  if (!quote || !quote.regularMarketPrice) return null;
-  return quote.regularMarketPrice;
+    https.get(url, { headers: { 'User-Agent': 'Mozilla/5.0' } }, function(res) {
+      var data = '';
+      res.on('data', function(chunk) { data += chunk; });
+      res.on('end', function() {
+        try {
+          var json = JSON.parse(data);
+          var meta = json.chart && json.chart.result && json.chart.result[0] && json.chart.result[0].meta;
+          if (meta && meta.regularMarketPrice) {
+            resolve(meta.regularMarketPrice);
+          } else {
+            reject(new Error('No price in response'));
+          }
+        } catch (e) {
+          reject(new Error('Parse error: ' + e.message));
+        }
+      });
+    }).on('error', function(err) {
+      reject(err);
+    });
+  });
 }
 
 // GET /api/picks — get current user's picks for active competition
@@ -117,11 +127,7 @@ router.post('/', function(req, res) {
   }
 
   // Fetch current price from Yahoo Finance — this IS the entry price
-  getPrice(symbol.toUpperCase(), type).then(function(entryPrice) {
-    if (!entryPrice) {
-      return res.status(400).json({ error: 'Could not get current price for ' + symbol + '. Try again in a moment.' });
-    }
-
+  fetchYahooPrice(symbol.toUpperCase(), type).then(function(entryPrice) {
     // Insert pick with price locked immediately
     var result = db.prepare(
       'INSERT INTO picks (user_id, competition_id, symbol, name, type, entry_price, current_price, locked) VALUES (?, ?, ?, ?, ?, ?, ?, 1)'
@@ -149,7 +155,7 @@ router.post('/', function(req, res) {
     });
   }).catch(function(err) {
     console.error('Price fetch error for ' + symbol + ':', err.message);
-    res.status(400).json({ error: 'Could not get price for ' + symbol + '. Try again.' });
+    res.status(400).json({ error: 'Could not get price for ' + symbol + '. Verify the ticker is valid and try again.' });
   });
 });
 
