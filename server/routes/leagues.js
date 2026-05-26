@@ -50,7 +50,9 @@ const CRYPTO_MAP = {
 
 
 
-// Fetch price using raw HTTPS to Yahoo Finance
+// ============ ROBUST PRICE FETCHING (multiple fallbacks) ============
+
+
 
 function fetchYahooPrice(symbol, type) {
 
@@ -62,43 +64,195 @@ function fetchYahooPrice(symbol, type) {
 
       : symbol;
 
-    var url = 'https://query1.finance.yahoo.com/v8/finance/chart/' + encodeURIComponent(yahooSymbol) + '?interval=1d&range=1d';
+    
 
-    https.get(url, { headers: { 'User-Agent': 'Mozilla/5.0' } }, function(res) {
+    // Method 1: query2 v8 chart
 
-      var data = '';
+    var url1 = 'https://query2.finance.yahoo.com/v8/finance/chart/' + encodeURIComponent(yahooSymbol) + '?interval=1d&range=1d';
 
-      res.on('data', function(chunk) { data += chunk; });
+    tryChartFetch(url1, function(price) {
 
-      res.on('end', function() {
+      if (price) return resolve(price);
 
-        try {
+      
 
-          var json = JSON.parse(data);
+      // Method 2: query1 v8 chart with range=5d
 
-          var meta = json.chart && json.chart.result && json.chart.result[0] && json.chart.result[0].meta;
+      var url2 = 'https://query1.finance.yahoo.com/v8/finance/chart/' + encodeURIComponent(yahooSymbol) + '?interval=1d&range=5d';
 
-          if (meta && meta.regularMarketPrice) {
+      tryChartFetch(url2, function(price2) {
 
-            resolve(meta.regularMarketPrice);
+        if (price2) return resolve(price2);
 
-          } else {
+        
 
-            reject(new Error('No price in response'));
+        // Method 3: scrape quote page
 
-          }
+        var url3 = 'https://finance.yahoo.com/quote/' + encodeURIComponent(yahooSymbol) + '/';
 
-        } catch (e) {
+        scrapeQuotePage(url3, function(price3) {
 
-          reject(new Error('Parse error'));
+          if (price3) return resolve(price3);
 
-        }
+          reject(new Error('All price methods failed for ' + symbol));
+
+        });
 
       });
 
-    }).on('error', reject);
+    });
 
   });
+
+}
+
+
+
+function tryChartFetch(url, callback) {
+
+  var options = {
+
+    headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' }
+
+  };
+
+  https.get(url, options, function(res) {
+
+    if (res.statusCode !== 200) {
+
+      res.resume();
+
+      callback(null);
+
+      return;
+
+    }
+
+    var data = '';
+
+    res.on('data', function(chunk) { data += chunk; });
+
+    res.on('end', function() {
+
+      try {
+
+        var json = JSON.parse(data);
+
+        var meta = json.chart && json.chart.result && json.chart.result[0] && json.chart.result[0].meta;
+
+        if (meta && meta.regularMarketPrice) {
+
+          callback(meta.regularMarketPrice);
+
+        } else {
+
+          callback(null);
+
+        }
+
+      } catch (e) {
+
+        callback(null);
+
+      }
+
+    });
+
+  }).on('error', function() { callback(null); });
+
+}
+
+
+
+function scrapeQuotePage(url, callback) {
+
+  var options = {
+
+    headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' }
+
+  };
+
+  
+
+  function handleResponse(res) {
+
+    if (res.statusCode === 301 || res.statusCode === 302 || res.statusCode === 307) {
+
+      if (res.headers.location) {
+
+        var redirectUrl = res.headers.location;
+
+        if (redirectUrl.startsWith('/')) redirectUrl = 'https://finance.yahoo.com' + redirectUrl;
+
+        https.get(redirectUrl, options, handleResponse).on('error', function() { callback(null); });
+
+        res.resume();
+
+      } else {
+
+        callback(null);
+
+      }
+
+      return;
+
+    }
+
+    if (res.statusCode !== 200) {
+
+      res.resume();
+
+      callback(null);
+
+      return;
+
+    }
+
+    var data = '';
+
+    res.on('data', function(chunk) { data += chunk; });
+
+    res.on('end', function() {
+
+      var patterns = [
+
+        /"regularMarketPrice":\s*\{[^}]*"raw":\s*([\d.]+)/,
+
+        /"regularMarketPrice":\s*([\d.]+)/,
+
+        /data-field="regularMarketPrice"[^>]*value="([\d.]+)"/
+
+      ];
+
+      for (var i = 0; i < patterns.length; i++) {
+
+        var match = data.match(patterns[i]);
+
+        if (match) {
+
+          var price = parseFloat(match[1].replace(/,/g, ''));
+
+          if (price > 0) {
+
+            callback(price);
+
+            return;
+
+          }
+
+        }
+
+      }
+
+      callback(null);
+
+    });
+
+  }
+
+  
+
+  https.get(url, options, handleResponse).on('error', function() { callback(null); });
 
 }
 
