@@ -38,6 +38,32 @@ const { fetchPrices } = require('./jobs/fetchPrices');
 
 
 
+// ==================== AUTO-SEED ====================
+
+// Ensure Q3 2026 competition exists on every startup
+
+(function autoSeed() {
+
+  const existing = db.prepare('SELECT id FROM competitions LIMIT 1').get();
+
+  if (!existing) {
+
+    db.prepare(`
+
+      INSERT INTO competitions (name, type, quarter, year, draft_start, lock_date, end_date, status)
+
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+
+    `).run('Q3 2026', 'quarterly', 'Q3', 2026, '2026-06-01', '2026-07-01', '2026-09-30', 'drafting');
+
+    console.log('Auto-seeded Q3 2026 competition (drafting)');
+
+  }
+
+})();
+
+
+
 const app = express();
 
 const server = http.createServer(app);
