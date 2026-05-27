@@ -56,8 +56,7 @@ function fetchPrice(symbol, type) {
 
   return new Promise(function(resolve, reject) {
 
-    var apiKey = process.env.FINNHUB_KEY;
-
+var apiKey = process.env.FINNHUB_API_KEY;
     if (!apiKey) {
 
       return reject(new Error('FINNHUB_KEY not configured'));
