@@ -22,81 +22,101 @@ router.use(authenticate);
 
 
 
-// Crypto symbol map for Yahoo Finance
+// Crypto symbol map for Finnhub (uses Binance exchange prefix)
 
 const CRYPTO_MAP = {
 
-  'BTC': 'BTC-USD', 'ETH': 'ETH-USD', 'SOL': 'SOL-USD',
+  'BTC': 'BINANCE:BTCUSDT', 'ETH': 'BINANCE:ETHUSDT', 'SOL': 'BINANCE:SOLUSDT',
 
-  'ADA': 'ADA-USD', 'DOGE': 'DOGE-USD', 'XRP': 'XRP-USD',
+  'ADA': 'BINANCE:ADAUSDT', 'DOGE': 'BINANCE:DOGEUSDT', 'XRP': 'BINANCE:XRPUSDT',
 
-  'AVAX': 'AVAX-USD', 'DOT': 'DOT-USD', 'LINK': 'LINK-USD',
+  'AVAX': 'BINANCE:AVAXUSDT', 'DOT': 'BINANCE:DOTUSDT', 'LINK': 'BINANCE:LINKUSDT',
 
-  'MATIC': 'MATIC-USD', 'BNB': 'BNB-USD', 'SHIB': 'SHIB-USD',
+  'MATIC': 'BINANCE:MATICUSDT', 'BNB': 'BINANCE:BNBUSDT', 'SHIB': 'BINANCE:SHIBUSDT',
 
-  'UNI': 'UNI-USD', 'ATOM': 'ATOM-USD', 'LTC': 'LTC-USD',
+  'UNI': 'BINANCE:UNIUSDT', 'ATOM': 'BINANCE:ATOMUSDT', 'LTC': 'BINANCE:LTCUSDT',
 
-  'FIL': 'FIL-USD', 'APT': 'APT-USD', 'ARB': 'ARB-USD',
+  'FIL': 'BINANCE:FILUSDT', 'APT': 'BINANCE:APTUSDT', 'ARB': 'BINANCE:ARBUSDT',
 
-  'OP': 'OP-USD', 'NEAR': 'NEAR-USD', 'ICP': 'ICP-USD',
+  'OP': 'BINANCE:OPUSDT', 'NEAR': 'BINANCE:NEARUSDT', 'ICP': 'BINANCE:ICPUSDT',
 
-  'IMX': 'IMX-USD', 'AAVE': 'AAVE-USD', 'MKR': 'MKR-USD',
+  'IMX': 'BINANCE:IMXUSDT', 'AAVE': 'BINANCE:AAVEUSDT', 'MKR': 'BINANCE:MKRUSDT',
 
-  'PEPE': 'PEPE-USD'
+  'PEPE': 'BINANCE:PEPEUSDT'
 
 };
 
 
 
-// ============ ROBUST PRICE FETCHING (multiple fallbacks) ============
+// ============ PRICE FETCHING VIA FINNHUB ============
 
 
 
-function fetchYahooPrice(symbol, type) {
+function fetchPrice(symbol, type) {
 
   return new Promise(function(resolve, reject) {
 
-    var yahooSymbol = type === 'crypto'
+    var apiKey = process.env.FINNHUB_KEY;
 
-      ? (CRYPTO_MAP[symbol] || symbol + '-USD')
+    if (!apiKey) {
+
+      return reject(new Error('FINNHUB_KEY not configured'));
+
+    }
+
+
+
+    var finnhubSymbol = type === 'crypto'
+
+      ? (CRYPTO_MAP[symbol] || 'BINANCE:' + symbol + 'USDT')
 
       : symbol;
 
-    
 
-    // Method 1: query2 v8 chart
 
-    var url1 = 'https://query2.finance.yahoo.com/v8/finance/chart/' + encodeURIComponent(yahooSymbol) + '?interval=1d&range=1d';
+    var url = 'https://finnhub.io/api/v1/quote?symbol=' + encodeURIComponent(finnhubSymbol) + '&token=' + apiKey;
 
-    tryChartFetch(url1, function(price) {
 
-      if (price) return resolve(price);
 
-      
+    https.get(url, function(res) {
 
-      // Method 2: query1 v8 chart with range=5d
+      var data = '';
 
-      var url2 = 'https://query1.finance.yahoo.com/v8/finance/chart/' + encodeURIComponent(yahooSymbol) + '?interval=1d&range=5d';
+      res.on('data', function(chunk) { data += chunk; });
 
-      tryChartFetch(url2, function(price2) {
+      res.on('end', function() {
 
-        if (price2) return resolve(price2);
+        try {
 
-        
+          var json = JSON.parse(data);
 
-        // Method 3: scrape quote page
+          // json.c = current price, json.pc = previous close
 
-        var url3 = 'https://finance.yahoo.com/quote/' + encodeURIComponent(yahooSymbol) + '/';
+          if (json.c && json.c > 0) {
 
-        scrapeQuotePage(url3, function(price3) {
+            resolve(json.c);
 
-          if (price3) return resolve(price3);
+          } else if (json.pc && json.pc > 0) {
 
-          reject(new Error('All price methods failed for ' + symbol));
+            resolve(json.pc);
 
-        });
+          } else {
+
+            reject(new Error('No price data for ' + symbol));
+
+          }
+
+        } catch (e) {
+
+          reject(new Error('Parse error'));
+
+        }
 
       });
+
+    }).on('error', function(err) {
+
+      reject(err);
 
     });
 
@@ -106,173 +126,17 @@ function fetchYahooPrice(symbol, type) {
 
 
 
-function tryChartFetch(url, callback) {
-
-  var options = {
-
-    headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' }
-
-  };
-
-  https.get(url, options, function(res) {
-
-    if (res.statusCode !== 200) {
-
-      res.resume();
-
-      callback(null);
-
-      return;
-
-    }
-
-    var data = '';
-
-    res.on('data', function(chunk) { data += chunk; });
-
-    res.on('end', function() {
-
-      try {
-
-        var json = JSON.parse(data);
-
-        var meta = json.chart && json.chart.result && json.chart.result[0] && json.chart.result[0].meta;
-
-        if (meta && meta.regularMarketPrice) {
-
-          callback(meta.regularMarketPrice);
-
-        } else {
-
-          callback(null);
-
-        }
-
-      } catch (e) {
-
-        callback(null);
-
-      }
-
-    });
-
-  }).on('error', function() { callback(null); });
-
-}
-
-
-
-function scrapeQuotePage(url, callback) {
-
-  var options = {
-
-    headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' }
-
-  };
-
-  
-
-  function handleResponse(res) {
-
-    // Follow redirects
-
-    if (res.statusCode === 301 || res.statusCode === 302 || res.statusCode === 307) {
-
-      if (res.headers.location) {
-
-        var redirectUrl = res.headers.location;
-
-        if (redirectUrl.startsWith('/')) redirectUrl = 'https://finance.yahoo.com' + redirectUrl;
-
-        https.get(redirectUrl, options, handleResponse).on('error', function() { callback(null); });
-
-        res.resume();
-
-      } else {
-
-        callback(null);
-
-      }
-
-      return;
-
-    }
-
-    if (res.statusCode !== 200) {
-
-      res.resume();
-
-      callback(null);
-
-      return;
-
-    }
-
-    var data = '';
-
-    res.on('data', function(chunk) { data += chunk; });
-
-    res.on('end', function() {
-
-      // Try multiple regex patterns for the price
-
-      var patterns = [
-
-        /"regularMarketPrice":\s*\{[^}]*"raw":\s*([\d.]+)/,
-
-        /"regularMarketPrice":\s*([\d.]+)/,
-
-        /data-field="regularMarketPrice"[^>]*value="([\d.]+)"/,
-
-        /Fw\(700\)[^>]*>([\d,.]+)<\/fin-streamer>/
-
-      ];
-
-      for (var i = 0; i < patterns.length; i++) {
-
-        var match = data.match(patterns[i]);
-
-        if (match) {
-
-          var price = parseFloat(match[1].replace(/,/g, ''));
-
-          if (price > 0) {
-
-            callback(price);
-
-            return;
-
-          }
-
-        }
-
-      }
-
-      callback(null);
-
-    });
-
-  }
-
-  
-
-  https.get(url, options, handleResponse).on('error', function() { callback(null); });
-
-}
-
-
-
 // ============ ROUTES ============
 
 
 
-// GET /api/picks - get current user's picks for active competition
+// GET /api/picks - get current user picks for active competition
 
 router.get('/', function(req, res) {
 
   var compId = req.query.competition_id;
 
-  
+
 
   var picks;
 
@@ -302,7 +166,7 @@ router.get('/', function(req, res) {
 
 
 
-// GET /api/picks/user/:userId - get another user's picks
+// GET /api/picks/user/:userId - get another user picks
 
 router.get('/user/:userId', function(req, res) {
 
@@ -394,7 +258,7 @@ router.post('/', function(req, res) {
 
   // Fetch live price and lock immediately
 
-  fetchYahooPrice(symbol.toUpperCase(), type).then(function(entryPrice) {
+  fetchPrice(symbol.toUpperCase(), type).then(function(entryPrice) {
 
     var result = db.prepare(
 
@@ -446,13 +310,13 @@ router.post('/', function(req, res) {
 
 
 
-// DELETE /api/picks/:id - remove a pick (allowed anytime except after competition ends)
+// DELETE /api/picks/:id - remove a pick
 
 router.delete('/:id', function(req, res) {
 
   var pick = db.prepare('SELECT p.*, c.status as comp_status FROM picks p JOIN competitions c ON c.id = p.competition_id WHERE p.id = ? AND p.user_id = ?').get(req.params.id, req.user.id);
 
-  
+
 
   if (!pick) return res.status(404).json({ error: 'Pick not found' });
 
@@ -473,3 +337,4 @@ router.delete('/:id', function(req, res) {
 
 
 module.exports = router;
+
