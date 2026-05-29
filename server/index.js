@@ -240,82 +240,6 @@ function updateCompetitionStatuses() {
 
 
 
-// Update league pick prices alongside main competition picks
-
-function updateLeaguePrices() {
-
-  const https = require('https');
-
-  const CRYPTO_MAP = {
-
-    'BTC': 'BTC-USD', 'ETH': 'ETH-USD', 'SOL': 'SOL-USD',
-
-    'ADA': 'ADA-USD', 'DOGE': 'DOGE-USD', 'XRP': 'XRP-USD'
-
-  };
-
-
-
-  // Get all unique symbols from active leagues
-
-  const now = new Date().toISOString().split('T')[0];
-
-  const symbols = db.prepare(`
-
-    SELECT DISTINCT lp.symbol, lp.type FROM league_picks lp
-
-    JOIN leagues l ON l.id = lp.league_id
-
-    WHERE l.start_date <= ? AND l.end_date >= ?
-
-  `).all(now, now);
-
-
-
-  symbols.forEach(function(s) {
-
-    var yahooSymbol = s.type === 'crypto' ? (CRYPTO_MAP[s.symbol] || s.symbol + '-USD') : s.symbol;
-
-    var url = 'https://query1.finance.yahoo.com/v8/finance/chart/' + encodeURIComponent(yahooSymbol) + '?interval=1d&range=1d';
-
-    
-
-    https.get(url, { headers: { 'User-Agent': 'Mozilla/5.0' } }, function(res) {
-
-      var data = '';
-
-      res.on('data', function(chunk) { data += chunk; });
-
-      res.on('end', function() {
-
-        try {
-
-          var json = JSON.parse(data);
-
-          var meta = json.chart && json.chart.result && json.chart.result[0] && json.chart.result[0].meta;
-
-          if (meta && meta.regularMarketPrice) {
-
-            var price = meta.regularMarketPrice;
-
-            db.prepare('UPDATE league_picks SET current_price = ? WHERE symbol = ?').run(price, s.symbol);
-
-            db.prepare('UPDATE league_picks SET return_pct = ROUND(((? - entry_price) / entry_price) * 100, 2) WHERE symbol = ? AND entry_price > 0').run(price, s.symbol);
-
-          }
-
-        } catch (e) {}
-
-      });
-
-    }).on('error', function() {});
-
-  });
-
-}
-
-
-
 // Run status check every hour
 
 cron.schedule('0 * * * *', () => {
@@ -344,10 +268,6 @@ cron.schedule(priceCron, () => {
 
 
 
-  // Also update league prices
-
-  updateLeaguePrices();
-
 });
 
 
@@ -365,8 +285,6 @@ cron.schedule('*/15 * * * 0,6', () => {
   }).catch(err => console.error('Weekend price fetch failed:', err.message));
 
 
-
-  updateLeaguePrices();
 
 });
 
