@@ -1,93 +1,274 @@
-// jobs/fetchPrices.js — Fetch current prices from Yahoo Finance & update picks
+// jobs/fetchPrices.js - Fetch current prices from Finnhub and update picks
+
+const https = require('https');
+
 const db = require('../database');
 
-let yahooFinance;
 
-// Map crypto symbols to Yahoo Finance format
+
+const FINNHUB_KEY = 'd8bh339r01qu2eqh9rkgd8bh339r01qu2eqh9rl0';
+
+
+
+// Map crypto symbols to Finnhub/Binance format
+
 const CRYPTO_MAP = {
-  'BTC': 'BTC-USD',
-  'ETH': 'ETH-USD',
-  'SOL': 'SOL-USD',
-  'ADA': 'ADA-USD',
-  'DOGE': 'DOGE-USD',
-  'XRP': 'XRP-USD',
-  'AVAX': 'AVAX-USD',
-  'DOT': 'DOT-USD',
-  'LINK': 'LINK-USD',
-  'MATIC': 'MATIC-USD'
+
+  'BTC': 'BINANCE:BTCUSDT', 'ETH': 'BINANCE:ETHUSDT', 'SOL': 'BINANCE:SOLUSDT',
+
+  'ADA': 'BINANCE:ADAUSDT', 'DOGE': 'BINANCE:DOGEUSDT', 'XRP': 'BINANCE:XRPUSDT',
+
+  'AVAX': 'BINANCE:AVAXUSDT', 'DOT': 'BINANCE:DOTUSDT', 'LINK': 'BINANCE:LINKUSDT',
+
+  'MATIC': 'BINANCE:MATICUSDT', 'BNB': 'BINANCE:BNBUSDT', 'SHIB': 'BINANCE:SHIBUSDT',
+
+  'UNI': 'BINANCE:UNIUSDT', 'ATOM': 'BINANCE:ATOMUSDT', 'LTC': 'BINANCE:LTCUSDT',
+
+  'FIL': 'BINANCE:FILUSDT', 'APT': 'BINANCE:APTUSDT', 'ARB': 'BINANCE:ARBUSDT',
+
+  'OP': 'BINANCE:OPUSDT', 'NEAR': 'BINANCE:NEARUSDT', 'ICP': 'BINANCE:ICPUSDT',
+
+  'IMX': 'BINANCE:IMXUSDT', 'AAVE': 'BINANCE:AAVEUSDT', 'MKR': 'BINANCE:MKRUSDT',
+
+  'PEPE': 'BINANCE:PEPEUSDT'
+
 };
 
-async function fetchPrices() {
-  console.log(`[${new Date().toISOString()}] Starting price fetch...`);
 
-  // Dynamic import for ESM-only yahoo-finance2
-  if (!yahooFinance) {
-    const mod = await import('yahoo-finance2');
-    yahooFinance = mod.default;
-  }
+
+function getPrice(symbol, type) {
+
+  return new Promise(function(resolve, reject) {
+
+    var finnhubSymbol = type === 'crypto'
+
+      ? (CRYPTO_MAP[symbol] || 'BINANCE:' + symbol + 'USDT')
+
+      : symbol;
+
+
+
+    var url = 'https://finnhub.io/api/v1/quote?symbol=' + encodeURIComponent(finnhubSymbol) + '&token=' + FINNHUB_KEY;
+
+
+
+    https.get(url, function(res) {
+
+      var data = '';
+
+      res.on('data', function(chunk) { data += chunk; });
+
+      res.on('end', function() {
+
+        try {
+
+          var json = JSON.parse(data);
+
+          if (json.c && json.c > 0) {
+
+            resolve(json.c);
+
+          } else if (json.pc && json.pc > 0) {
+
+            resolve(json.pc);
+
+          } else {
+
+            reject(new Error('No price data'));
+
+          }
+
+        } catch (e) {
+
+          reject(new Error('Parse error'));
+
+        }
+
+      });
+
+    }).on('error', reject);
+
+  });
+
+}
+
+
+
+function sleep(ms) {
+
+  return new Promise(function(resolve) { setTimeout(resolve, ms); });
+
+}
+
+
+
+async function fetchPrices() {
+
+  console.log('[' + new Date().toISOString() + '] Starting price fetch...');
+
+
 
   // Get all unique symbols from active/drafting competitions
-  const symbols = db.prepare(`
-    SELECT DISTINCT p.symbol, p.type FROM picks p
-    JOIN competitions c ON c.id = p.competition_id
-    WHERE c.status IN ('drafting', 'active')
-  `).all();
+
+  var symbols = db.prepare(
+
+    "SELECT DISTINCT p.symbol, p.type FROM picks p JOIN competitions c ON c.id = p.competition_id WHERE c.status IN ('drafting', 'active')"
+
+  ).all();
+
+
 
   if (symbols.length === 0) {
+
     console.log('No active picks to update.');
+
     return;
+
   }
 
-  console.log(`Fetching prices for ${symbols.length} symbols...`);
 
-  let updated = 0;
-  let failed = 0;
 
-  for (const { symbol, type } of symbols) {
+  console.log('Fetching prices for ' + symbols.length + ' symbols...');
+
+
+
+  var updated = 0;
+
+  var failed = 0;
+
+
+
+  for (var i = 0; i < symbols.length; i++) {
+
+    var symbol = symbols[i].symbol;
+
+    var type = symbols[i].type;
+
+
+
     try {
-      const yahooSymbol = type === 'crypto'
-        ? (CRYPTO_MAP[symbol] || symbol + '-USD')
-        : symbol;
 
-      const quote = await yahooFinance.quote(yahooSymbol);
+      var price = await getPrice(symbol, type);
 
-      if (!quote || !quote.regularMarketPrice) {
-        console.warn(`  No price data for ${symbol} (${yahooSymbol})`);
-        failed++;
-        continue;
-      }
 
-      const price = quote.regularMarketPrice;
 
-      db.prepare(`UPDATE picks SET current_price = ? WHERE symbol = ?`).run(price, symbol);
+      // Update current_price for all picks with this symbol
 
-      db.prepare(`
-        UPDATE picks
-        SET return_pct = ROUND(((? - entry_price) / entry_price) * 100, 2)
-        WHERE symbol = ? AND locked = 1 AND entry_price > 0
-      `).run(price, symbol);
+      db.prepare('UPDATE picks SET current_price = ? WHERE symbol = ?').run(price, symbol);
 
-      db.prepare(`INSERT INTO price_history (symbol, price) VALUES (?, ?)`).run(symbol, price);
+
+
+      // Calculate return_pct for locked picks
+
+      db.prepare(
+
+        'UPDATE picks SET return_pct = ROUND(((? - entry_price) / entry_price) * 100, 2) WHERE symbol = ? AND locked = 1 AND entry_price > 0'
+
+      ).run(price, symbol);
+
+
+
+      // Record price history
+
+      db.prepare('INSERT INTO price_history (symbol, price) VALUES (?, ?)').run(symbol, price);
+
+
 
       updated++;
-      console.log(`  ${symbol}: $${price.toFixed(2)}`);
 
-      await new Promise(r => setTimeout(r, 300));
+      console.log('  ' + symbol + ': $' + price.toFixed(2));
+
+
+
+      // Rate limiting - Finnhub free tier is 60/min, so wait 1.1 seconds between calls
+
+      await sleep(1100);
+
     } catch (err) {
-      console.error(`  Error fetching ${symbol}:`, err.message);
+
+      console.error('  Error fetching ' + symbol + ':', err.message);
+
       failed++;
+
+      await sleep(500);
+
     }
+
   }
 
-  console.log(`Price fetch complete. Updated: ${updated}, Failed: ${failed}`);
+
+
+  // Also update league picks
+
+  var leagueSymbols = db.prepare(
+
+    "SELECT DISTINCT lp.symbol, lp.type FROM league_picks lp JOIN leagues l ON l.id = lp.league_id WHERE l.start_date <= date('now') AND l.end_date >= date('now')"
+
+  ).all();
+
+
+
+  for (var j = 0; j < leagueSymbols.length; j++) {
+
+    var sym = leagueSymbols[j].symbol;
+
+    var typ = leagueSymbols[j].type;
+
+
+
+    try {
+
+      var p = await getPrice(sym, typ);
+
+
+
+      db.prepare('UPDATE league_picks SET current_price = ? WHERE symbol = ?').run(p, sym);
+
+      db.prepare(
+
+        'UPDATE league_picks SET return_pct = ROUND(((? - entry_price) / entry_price) * 100, 2) WHERE symbol = ? AND entry_price > 0'
+
+      ).run(p, sym);
+
+
+
+      console.log('  [league] ' + sym + ': $' + p.toFixed(2));
+
+      await sleep(1100);
+
+    } catch (err) {
+
+      console.error('  [league] Error fetching ' + sym + ':', err.message);
+
+      await sleep(500);
+
+    }
+
+  }
+
+
+
+  console.log('Price fetch complete. Updated: ' + updated + ', Failed: ' + failed);
+
 }
+
+
+
+// If run directly (npm run fetch-prices)
 
 if (require.main === module) {
-  require('dotenv').config({ path: require('path').join(__dirname, '..', '.env') });
-  fetchPrices().then(() => process.exit(0)).catch(err => {
+
+  fetchPrices().then(function() { process.exit(0); }).catch(function(err) {
+
     console.error('Fatal error:', err);
+
     process.exit(1);
+
   });
+
 }
 
+
+
 module.exports = { fetchPrices };
+
