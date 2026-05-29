@@ -22,9 +22,15 @@ router.use(authenticate);
 
 
 
-// Crypto symbol map for Finnhub (uses Binance exchange prefix)
+// Crypto symbol map for Yahoo Finance
 
-const CRYPTO_MAP = {
+// Finnhub API for price fetching
+
+var FINNHUB_KEY = 'd8bh339r01qu2eqh9rkgd8bh339r01qu2eqh9rl0';
+
+
+
+var CRYPTO_MAP = {
 
   'BTC': 'BINANCE:BTCUSDT', 'ETH': 'BINANCE:ETHUSDT', 'SOL': 'BINANCE:SOLUSDT',
 
@@ -48,19 +54,9 @@ const CRYPTO_MAP = {
 
 
 
-// ============ PRICE FETCHING VIA FINNHUB ============
-
-
-
-function fetchPrice(symbol, type) {
+function getStockPrice(symbol, type) {
 
   return new Promise(function(resolve, reject) {
-
-    var apiKey = 'd8bh339r01qu2eqh9rkgd8bh339r01qu2eqh9rl0';
-
-    // Key hardcoded
-
-
 
     var finnhubSymbol = type === 'crypto'
 
@@ -70,7 +66,7 @@ function fetchPrice(symbol, type) {
 
 
 
-    var url = 'https://finnhub.io/api/v1/quote?symbol=' + encodeURIComponent(finnhubSymbol) + '&token=' + apiKey;
+    var url = 'https://finnhub.io/api/v1/quote?symbol=' + encodeURIComponent(finnhubSymbol) + '&token=' + FINNHUB_KEY;
 
 
 
@@ -85,8 +81,6 @@ function fetchPrice(symbol, type) {
         try {
 
           var json = JSON.parse(data);
-
-          // json.c = current price, json.pc = previous close
 
           if (json.c && json.c > 0) {
 
@@ -104,7 +98,7 @@ function fetchPrice(symbol, type) {
 
         } catch (e) {
 
-          reject(new Error('Parse error'));
+          reject(new Error('Parse error for ' + symbol));
 
         }
 
@@ -126,13 +120,13 @@ function fetchPrice(symbol, type) {
 
 
 
-// GET /api/picks - get current user picks for active competition
+// GET /api/picks - get current user's picks for active competition
 
 router.get('/', function(req, res) {
 
   var compId = req.query.competition_id;
 
-
+  
 
   var picks;
 
@@ -162,7 +156,7 @@ router.get('/', function(req, res) {
 
 
 
-// GET /api/picks/user/:userId - get another user picks
+// GET /api/picks/user/:userId - get another user's picks
 
 router.get('/user/:userId', function(req, res) {
 
@@ -254,7 +248,7 @@ router.post('/', function(req, res) {
 
   // Fetch live price and lock immediately
 
-  fetchPrice(symbol.toUpperCase(), type).then(function(entryPrice) {
+  fetchYahooPrice(symbol.toUpperCase(), type).then(function(entryPrice) {
 
     var result = db.prepare(
 
@@ -306,13 +300,13 @@ router.post('/', function(req, res) {
 
 
 
-// DELETE /api/picks/:id - remove a pick
+// DELETE /api/picks/:id - remove a pick (allowed anytime except after competition ends)
 
 router.delete('/:id', function(req, res) {
 
   var pick = db.prepare('SELECT p.*, c.status as comp_status FROM picks p JOIN competitions c ON c.id = p.competition_id WHERE p.id = ? AND p.user_id = ?').get(req.params.id, req.user.id);
 
-
+  
 
   if (!pick) return res.status(404).json({ error: 'Pick not found' });
 
@@ -333,4 +327,3 @@ router.delete('/:id', function(req, res) {
 
 
 module.exports = router;
-
