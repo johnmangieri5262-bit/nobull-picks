@@ -248,7 +248,7 @@ router.post('/', function(req, res) {
 
   // Fetch live price and lock immediately
 
-  fetchYahooPrice(symbol.toUpperCase(), type).then(function(entryPrice) {
+  getStockPrice(symbol.toUpperCase(), type).then(function(entryPrice) {
 
     var result = db.prepare(
 
