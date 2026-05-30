@@ -10,6 +10,8 @@ const db = require('../database');
 
 const { authenticate } = require('../middleware/auth');
 
+const { broadcastLeaderboard } = require('../websocket');
+
 
 
 const router = express.Router();
@@ -26,93 +28,231 @@ router.use(authenticate);
 
 const CRYPTO_MAP = {
 
-  'BTC': 'BINANCE:BTCUSDT', 'ETH': 'BINANCE:ETHUSDT', 'SOL': 'BINANCE:SOLUSDT',
+  'BTC': 'BTC-USD', 'ETH': 'ETH-USD', 'SOL': 'SOL-USD',
 
-  'ADA': 'BINANCE:ADAUSDT', 'DOGE': 'BINANCE:DOGEUSDT', 'XRP': 'BINANCE:XRPUSDT',
+  'ADA': 'ADA-USD', 'DOGE': 'DOGE-USD', 'XRP': 'XRP-USD',
 
-  'AVAX': 'BINANCE:AVAXUSDT', 'DOT': 'BINANCE:DOTUSDT', 'LINK': 'BINANCE:LINKUSDT',
+  'AVAX': 'AVAX-USD', 'DOT': 'DOT-USD', 'LINK': 'LINK-USD',
 
-  'MATIC': 'BINANCE:MATICUSDT', 'BNB': 'BINANCE:BNBUSDT', 'SHIB': 'BINANCE:SHIBUSDT',
+  'MATIC': 'MATIC-USD', 'BNB': 'BNB-USD', 'SHIB': 'SHIB-USD',
 
-  'UNI': 'BINANCE:UNIUSDT', 'ATOM': 'BINANCE:ATOMUSDT', 'LTC': 'BINANCE:LTCUSDT',
+  'UNI': 'UNI-USD', 'ATOM': 'ATOM-USD', 'LTC': 'LTC-USD',
 
-  'FIL': 'BINANCE:FILUSDT', 'APT': 'BINANCE:APTUSDT', 'ARB': 'BINANCE:ARBUSDT',
+  'FIL': 'FIL-USD', 'APT': 'APT-USD', 'ARB': 'ARB-USD',
 
-  'OP': 'BINANCE:OPUSDT', 'NEAR': 'BINANCE:NEARUSDT', 'ICP': 'BINANCE:ICPUSDT',
+  'OP': 'OP-USD', 'NEAR': 'NEAR-USD', 'ICP': 'ICP-USD',
 
-  'IMX': 'BINANCE:IMXUSDT', 'AAVE': 'BINANCE:AAVEUSDT', 'MKR': 'BINANCE:MKRUSDT',
+  'IMX': 'IMX-USD', 'AAVE': 'AAVE-USD', 'MKR': 'MKR-USD',
 
-  'PEPE': 'BINANCE:PEPEUSDT'
+  'PEPE': 'PEPE-USD'
 
 };
 
 
 
-// ============ PRICE FETCHING VIA FINNHUB ============
+// ============ ROBUST PRICE FETCHING (multiple fallbacks) ============
 
 
 
-function fetchPrice(symbol, type) {
+function fetchYahooPrice(symbol, type) {
 
   return new Promise(function(resolve, reject) {
 
-    var apiKey = 'd8bh339r01qu2eqh9rkgd8bh339r01qu2eqh9rl0';
+    var yahooSymbol = type === 'crypto'
 
-
-
-    var finnhubSymbol = type === 'crypto'
-
-      ? (CRYPTO_MAP[symbol] || 'BINANCE:' + symbol + 'USDT')
+      ? (CRYPTO_MAP[symbol] || symbol + '-USD')
 
       : symbol;
 
+    
 
+    // Method 1: query2 v8 chart
 
-    var url = 'https://finnhub.io/api/v1/quote?symbol=' + encodeURIComponent(finnhubSymbol) + '&token=' + apiKey;
+    var url1 = 'https://query2.finance.yahoo.com/v8/finance/chart/' + encodeURIComponent(yahooSymbol) + '?interval=1d&range=1d';
 
+    tryChartFetch(url1, function(price) {
 
+      if (price) return resolve(price);
 
-    https.get(url, function(res) {
+      
 
-      var data = '';
+      // Method 2: query1 v8 chart with range=5d
 
-      res.on('data', function(chunk) { data += chunk; });
+      var url2 = 'https://query1.finance.yahoo.com/v8/finance/chart/' + encodeURIComponent(yahooSymbol) + '?interval=1d&range=5d';
 
-      res.on('end', function() {
+      tryChartFetch(url2, function(price2) {
 
-        try {
+        if (price2) return resolve(price2);
 
-          var json = JSON.parse(data);
+        
 
-          if (json.c && json.c > 0) {
+        // Method 3: scrape quote page
 
-            resolve(json.c);
+        var url3 = 'https://finance.yahoo.com/quote/' + encodeURIComponent(yahooSymbol) + '/';
 
-          } else if (json.pc && json.pc > 0) {
+        scrapeQuotePage(url3, function(price3) {
 
-            resolve(json.pc);
+          if (price3) return resolve(price3);
 
-          } else {
+          reject(new Error('All price methods failed for ' + symbol));
 
-            reject(new Error('No price data for ' + symbol));
-
-          }
-
-        } catch (e) {
-
-          reject(new Error('Parse error'));
-
-        }
+        });
 
       });
-
-    }).on('error', function(err) {
-
-      reject(err);
 
     });
 
   });
+
+}
+
+
+
+function tryChartFetch(url, callback) {
+
+  var options = {
+
+    headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' }
+
+  };
+
+  https.get(url, options, function(res) {
+
+    if (res.statusCode !== 200) {
+
+      res.resume();
+
+      callback(null);
+
+      return;
+
+    }
+
+    var data = '';
+
+    res.on('data', function(chunk) { data += chunk; });
+
+    res.on('end', function() {
+
+      try {
+
+        var json = JSON.parse(data);
+
+        var meta = json.chart && json.chart.result && json.chart.result[0] && json.chart.result[0].meta;
+
+        if (meta && meta.regularMarketPrice) {
+
+          callback(meta.regularMarketPrice);
+
+        } else {
+
+          callback(null);
+
+        }
+
+      } catch (e) {
+
+        callback(null);
+
+      }
+
+    });
+
+  }).on('error', function() { callback(null); });
+
+}
+
+
+
+function scrapeQuotePage(url, callback) {
+
+  var options = {
+
+    headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' }
+
+  };
+
+  
+
+  function handleResponse(res) {
+
+    if (res.statusCode === 301 || res.statusCode === 302 || res.statusCode === 307) {
+
+      if (res.headers.location) {
+
+        var redirectUrl = res.headers.location;
+
+        if (redirectUrl.startsWith('/')) redirectUrl = 'https://finance.yahoo.com' + redirectUrl;
+
+        https.get(redirectUrl, options, handleResponse).on('error', function() { callback(null); });
+
+        res.resume();
+
+      } else {
+
+        callback(null);
+
+      }
+
+      return;
+
+    }
+
+    if (res.statusCode !== 200) {
+
+      res.resume();
+
+      callback(null);
+
+      return;
+
+    }
+
+    var data = '';
+
+    res.on('data', function(chunk) { data += chunk; });
+
+    res.on('end', function() {
+
+      var patterns = [
+
+        /"regularMarketPrice":\s*\{[^}]*"raw":\s*([\d.]+)/,
+
+        /"regularMarketPrice":\s*([\d.]+)/,
+
+        /data-field="regularMarketPrice"[^>]*value="([\d.]+)"/
+
+      ];
+
+      for (var i = 0; i < patterns.length; i++) {
+
+        var match = data.match(patterns[i]);
+
+        if (match) {
+
+          var price = parseFloat(match[1].replace(/,/g, ''));
+
+          if (price > 0) {
+
+            callback(price);
+
+            return;
+
+          }
+
+        }
+
+      }
+
+      callback(null);
+
+    });
+
+  }
+
+  
+
+  https.get(url, options, handleResponse).on('error', function() { callback(null); });
 
 }
 
@@ -126,7 +266,7 @@ router.post('/', async function(req, res) {
 
     var name = req.body.name;
 
-    var leaguePw = req.body.league_password;
+    var leaguePw = req.body.league_pw;
 
     var max_players = req.body.max_players || 20;
 
@@ -142,7 +282,7 @@ router.post('/', async function(req, res) {
 
     if (!name || !leaguePw || !start_date || !end_date) {
 
-      return res.status(400).json({ error: 'name, league_password, start_date, and end_date required' });
+      return res.status(400).json({ error: 'name, league_pw, start_date, and end_date required' });
 
     }
 
@@ -242,13 +382,13 @@ router.post('/join', async function(req, res) {
 
     var league_id = req.body.league_id;
 
-    var leaguePw = req.body.league_password;
+    var leaguePw = req.body.league_pw;
 
 
 
     if (!league_id || !leaguePw) {
 
-      return res.status(400).json({ error: 'league_id and league_password required' });
+      return res.status(400).json({ error: 'league_id and league_pw required' });
 
     }
 
@@ -488,7 +628,7 @@ router.post('/:id/picks', function(req, res) {
 
 
 
-  fetchPrice(symbol.toUpperCase(), type).then(function(entryPrice) {
+  fetchYahooPrice(symbol.toUpperCase(), type).then(function(entryPrice) {
 
     var result = db.prepare(
 
@@ -671,4 +811,3 @@ function getLeagueStatus(start_date, end_date) {
 
 
 module.exports = router;
-
