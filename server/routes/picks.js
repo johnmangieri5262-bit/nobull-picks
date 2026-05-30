@@ -123,7 +123,7 @@ router.post('/', function(req, res) {
   if (exists) return res.status(400).json({ error: 'Already picked ' + symbol });
 
   // Fetch live price and lock immediately
-  fetchYahooPrice(symbol.toUpperCase(), type).then(function(entryPrice) {
+  getStockPrice(symbol.toUpperCase(), type).then(function(entryPrice) {
     var result = db.prepare(
       'INSERT INTO picks (user_id, competition_id, symbol, name, type, entry_price, current_price, locked) VALUES (?, ?, ?, ?, ?, ?, ?, 1)'
     ).run(req.user.id, comp.id, symbol.toUpperCase(), name, type, entryPrice, entryPrice);
