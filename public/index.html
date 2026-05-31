@@ -335,6 +335,7 @@
         <div style="display:flex;gap:8px;">
           <input type="text" id="leagueTickerSearch" placeholder="Search ticker (e.g. AAPL, BTC)">
           <button class="btn btn-primary" id="addLeaguePickBtn">+ Add</button>
+        <p style="color:#c41e1e;font-size:11px;margin-top:8px;font-weight:600;">⚠️ Picks lock instantly at the current market price. No changes or take-backs once added.</p>
         </div>
         <div class="search-results" id="leagueSearchResults"></div>
       </div>
@@ -1030,7 +1031,7 @@ function loadLeaguePicks(leagueId) {
     var html = '<div class="picks-grid">';
     data.picks.forEach(function(p) {
       var retClass = (p.return_pct || 0) >= 0 ? 'positive' : 'negative';
-      html += '<div class="pick-card"><div><div class="pick-ticker">' + p.symbol + '</div><div class="pick-name">' + p.name + '</div><div class="pick-price">Entry: $' + (p.entry_price || 0).toFixed(2) + '</div></div><div style="text-align:right;"><div class="mono ' + retClass + '">' + ((p.return_pct || 0) >= 0 ? '+' : '') + (p.return_pct || 0).toFixed(2) + '%</div><button class="btn btn-outline" style="font-size:10px;padding:2px 8px;margin-top:4px;" onclick="removeLeaguePick(' + leagueId + ',' + p.id + ')">Remove</button></div></div>';
+      html += '<div class="pick-card"><div><div class="pick-ticker">' + p.symbol + '</div><div class="pick-name">' + p.name + '</div><div class="pick-price">Entry: $' + (p.entry_price || 0).toFixed(2) + '</div></div><div style="text-align:right;"><div class="mono ' + retClass + '">' + ((p.return_pct || 0) >= 0 ? '+' : '') + (p.return_pct || 0).toFixed(2) + '%</div></div></div>';
     });
     html += '</div>';
     container.innerHTML = html;
