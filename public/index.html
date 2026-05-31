@@ -269,7 +269,7 @@
           <select id="pickType" style="max-width:130px;"><option value="stock">Stock</option><option value="etf">ETF</option><option value="crypto">Crypto</option></select>
           <input type="text" id="pickName" placeholder="Company name" style="max-width:200px;">
           <button class="btn btn-primary btn-sm" id="addPickBtn">+ Add Pick</button>
-        <p style="color:#c41e1e;font-size:11px;margin-top:8px;font-weight:600;">⚠️ Picks lock instantly at the current market price. No changes or take-backs once added.</p>
+        <p style="color:#c41e1e;font-size:11px;margin-top:8px;font-weight:600;">\u26a0\ufe0f Picks lock instantly at the current market price. No changes or take-backs once added.</p>
         </div>
       </div>
     </div>
@@ -301,8 +301,8 @@
       <!-- Join League Form (hidden by default) -->
       <div id="joinLeagueForm" style="display:none;margin-top:16px;border-top:1px solid var(--border);padding-top:16px;">
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-          <div class="form-group"><label>League ID</label><input type="number" id="joinLeagueId" placeholder="Ask the creator for the ID"></div>
-          <div class="form-group"><label>League Password</label><input type="text" id="joinLeaguePassword" placeholder="Enter league password"></div>
+          <div class="form-group"><label>League Name</label><input type="text" id="joinLeagueId" placeholder="Type the league name"></div>
+          <div class="form-group"><label>League Code</label><input type="text" id="joinLeaguePassword" placeholder="Enter the league code"></div>
         </div>
         <button class="btn btn-primary" id="joinLeagueBtn" style="margin-top:12px;">Join League</button>
       </div>
@@ -968,19 +968,32 @@ function createLeague() {
 }
 
 function joinLeague() {
-  var id = document.getElementById('joinLeagueId').value.trim();
+  var name = document.getElementById('joinLeagueId').value.trim();
   var pw = document.getElementById('joinLeaguePassword').value.trim();
-  if (!id || !pw) { showToast('League ID and password required', true); return; }
+  if (!name || !pw) { showToast('League name and code required', true); return; }
 
-  api('POST', '/leagues/join', { league_id: parseInt(id), league_pw: pw })
-    .then(function(data) {
-      showToast(data.message);
-      document.getElementById('joinLeagueForm').style.display = 'none';
-      document.getElementById('joinLeagueId').value = '';
-      document.getElementById('joinLeaguePassword').value = '';
-      loadMyLeagues();
-    })
-    .catch(function(err) { showToast(err.message, true); });
+  // Search for league by name
+  api('GET', '/leagues/browse').then(function(data) {
+    var match = null;
+    for (var i = 0; i < data.leagues.length; i++) {
+      if (data.leagues[i].name.toLowerCase() === name.toLowerCase()) {
+        match = data.leagues[i];
+        break;
+      }
+    }
+    if (!match) { showToast('No league found with that name', true); return; }
+
+    // Join by ID
+    api('POST', '/leagues/join', { league_id: match.id, league_pw: pw })
+      .then(function(joinData) {
+        showToast(joinData.message);
+        document.getElementById('joinLeagueForm').style.display = 'none';
+        document.getElementById('joinLeagueId').value = '';
+        document.getElementById('joinLeaguePassword').value = '';
+        loadMyLeagues();
+      })
+      .catch(function(err) { showToast(err.message, true); });
+  }).catch(function(err) { showToast(err.message, true); });
 }
 
 function viewLeague(leagueId) {
