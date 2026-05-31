@@ -75,7 +75,15 @@ app.get('/api/admin/wipe-test-data', (req, res) => {
   db.prepare('DELETE FROM price_history').run();
   res.json({ message: 'All picks, leagues, and price history wiped. Users kept.' });
 });
-
+// TEMPORARY: Wipe test data (remove after testing)
+app.get('/api/wipe-nobull-2026', (req, res) => {
+  db.prepare('DELETE FROM picks').run();
+  db.prepare('DELETE FROM league_picks').run();
+  db.prepare('DELETE FROM league_members').run();
+  db.prepare('DELETE FROM leagues').run();
+  db.prepare('DELETE FROM price_history').run();
+  res.json({ message: 'All picks, leagues, and price history wiped. Users kept.' });
+});
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({ 
