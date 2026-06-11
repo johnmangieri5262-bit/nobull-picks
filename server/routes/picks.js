@@ -58,7 +58,7 @@ router.get('/', auth, function(req, res) {
   try {
     var comp = db.prepare("SELECT * FROM competitions WHERE status IN ('drafting', 'active') ORDER BY created_at DESC LIMIT 1").get();
     if (!comp) return res.json({ picks: [], competition: null });
-    var picks = db.prepare('SELECT * FROM picks WHERE user_id = ? AND competition_id = ? ORDER BY created_at DESC').all(req.user.id, comp.id);
+    var picks = db.prepare('SELECT * FROM picks WHERE user_id = ? AND competition_id = ? ORDER BY id DESC').all(req.user.id, comp.id);
     res.json({ picks: picks, competition: comp });
   } catch (err) {
     console.error('GET /picks error:', err);
