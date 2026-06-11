@@ -6,10 +6,22 @@ const db = require('../database');
 const { authenticate: auth } = require('../middleware/auth');
 
 var FINNHUB_KEY = 'd8bh339r01qu2eqh9rkgd8bh339r01qu2eqh9rl0';
-var FMP_KEY = 'ZxMhLYmFdRwM6cmFxuh7o111j75gYoom';
+
+var CRYPTO_IDS = {
+  'BTC': 'bitcoin', 'ETH': 'ethereum', 'SOL': 'solana',
+  'ADA': 'cardano', 'DOGE': 'dogecoin', 'XRP': 'ripple',
+  'AVAX': 'avalanche-2', 'DOT': 'polkadot', 'LINK': 'chainlink',
+  'MATIC': 'matic-network', 'BNB': 'binancecoin', 'SHIB': 'shiba-inu',
+  'UNI': 'uniswap', 'ATOM': 'cosmos', 'LTC': 'litecoin',
+  'FIL': 'filecoin', 'APT': 'aptos', 'ARB': 'arbitrum',
+  'OP': 'optimism', 'NEAR': 'near', 'ICP': 'internet-computer',
+  'IMX': 'immutable-x', 'AAVE': 'aave', 'MKR': 'maker', 'PEPE': 'pepe'
+};
+
+var CRYPTO_SYMBOLS = Object.keys(CRYPTO_IDS);
 
 function getStockPrice(symbol, type) {
-  if (type === 'crypto') {
+  if (type === 'crypto' || CRYPTO_SYMBOLS.indexOf(symbol) !== -1) {
     return getCryptoPrice(symbol);
   }
   return getFinnhubPrice(symbol);
@@ -19,7 +31,6 @@ function getFinnhubPrice(symbol) {
   return new Promise(function(resolve, reject) {
     var parts = ['https://finnhub.io/api/v1/quote?symbol=', encodeURIComponent(symbol), String.fromCharCode(38), 'tok', 'en=', FINNHUB_KEY];
     var url = parts.join('');
-    console.log('Finnhub fetch: ' + symbol);
     https.get(url, function(res) {
       var data = '';
       res.on('data', function(chunk) { data += chunk; });
@@ -37,17 +48,16 @@ function getFinnhubPrice(symbol) {
 
 function getCryptoPrice(symbol) {
   return new Promise(function(resolve, reject) {
-    var fmpSymbol = symbol.toUpperCase() + 'USD';
-    var url = 'https://financialmodelingprep.com/api/v3/quote/' + fmpSymbol + '?apikey=' + FMP_KEY;
-    console.log('FMP crypto fetch: ' + fmpSymbol);
+    var coinId = CRYPTO_IDS[symbol] || symbol.toLowerCase();
+    var url = 'https://api.coingecko.com/api/v3/simple/price?ids=' + coinId + String.fromCharCode(38) + 'vs_currencies=usd';
     https.get(url, function(res) {
       var data = '';
       res.on('data', function(chunk) { data += chunk; });
       res.on('end', function() {
         try {
           var json = JSON.parse(data);
-          if (Array.isArray(json) && json.length > 0 && json[0].price > 0) {
-            resolve(json[0].price);
+          if (json[coinId] && json[coinId].usd > 0) {
+            resolve(json[coinId].usd);
           } else { reject(new Error('No crypto price for ' + symbol)); }
         } catch (e) { reject(new Error('Crypto parse error')); }
       });
