@@ -77,6 +77,17 @@ function getCryptoPrice(symbol) {
   });
 }
 
+// Helper: check if US stock market is currently open
+function isMarketOpen() {
+  var now = new Date();
+  var etStr = now.toLocaleString('en-US', { timeZone: 'America/New_York' });
+  var et = new Date(etStr);
+  var hour = et.getHours();
+  var min = et.getMinutes();
+  var day = et.getDay();
+  return day >= 1 && day <= 5 && ((hour > 9 || (hour === 9 && min >= 30)) && hour < 16);
+}
+
 // GET /api/picks
 router.get('/', auth, function(req, res) {
   try {
@@ -103,7 +114,7 @@ router.post('/', auth, async function(req, res) {
     if (!comp) return res.status(400).json({ error: 'No active competition' });
 
     var existing = db.prepare('SELECT COUNT(*) as cnt FROM picks WHERE user_id = ? AND competition_id = ?').get(req.user.id, comp.id);
-    if (existing.cnt >= comp.max_picks) return res.status(400).json({ error: 'Max picks reached (' + comp.max_picks + ')' });
+    if (existing.cnt >= 10) return res.status(400).json({ error: 'Max picks reached (10)' });
 
     var dupe = db.prepare('SELECT id FROM picks WHERE user_id = ? AND competition_id = ? AND symbol = ?').get(req.user.id, comp.id, symbol);
     if (dupe) return res.status(400).json({ error: 'You already picked ' + symbol });
@@ -111,10 +122,19 @@ router.post('/', auth, async function(req, res) {
     var price = await getStockPrice(symbol, type);
     if (!price || price <= 0) return res.status(400).json({ error: 'Could not get price for ' + symbol });
 
+    // Queue picks added outside market hours — entry price fills on next trading session
+    var isCrypto = (type === 'crypto' || CRYPTO_SYMBOLS.indexOf(symbol) !== -1);
+    if (!isMarketOpen() && !isCrypto) {
+      // Stock/ETF added after hours: save with entry_price = 0 (pending)
+      var stmt = db.prepare('INSERT INTO picks (user_id, competition_id, symbol, name, type, entry_price, current_price, locked) VALUES (?, ?, ?, ?, ?, 0, 0, 1)');
+      var result = stmt.run(req.user.id, comp.id, symbol, name, type);
+      return res.json({ success: true, pick: { id: result.lastInsertRowid, symbol: symbol, name: name, type: type, entry_price: 0, current_price: 0, return_pct: 0, added_at: new Date().toISOString() }, queued: true, message: symbol + ' queued! Entry price locks at next market open.' });
+    }
+
     var stmt = db.prepare('INSERT INTO picks (user_id, competition_id, symbol, name, type, entry_price, current_price, locked) VALUES (?, ?, ?, ?, ?, ?, ?, 1)');
     var result = stmt.run(req.user.id, comp.id, symbol, name, type, price, price);
 
-    res.json({ success: true, pick: { id: result.lastInsertRowid, symbol: symbol, name: name, type: type, entry_price: price, current_price: price, return_pct: 0 } });
+    res.json({ success: true, pick: { id: result.lastInsertRowid, symbol: symbol, name: name, type: type, entry_price: price, current_price: price, return_pct: 0, added_at: new Date().toISOString() } });
   } catch (err) {
     console.error('POST /picks error:', err.message);
     res.status(500).json({ error: 'Could not get price for ' + (req.body.symbol || 'unknown') });
@@ -140,9 +160,13 @@ router.get('/leaderboard', function(req, res) {
     var comp = db.prepare("SELECT * FROM competitions WHERE status IN ('drafting', 'active') ORDER BY id DESC LIMIT 1").get();
     if (!comp) return res.json({ leaderboard: [], competition: null });
 
-    var rows = db.prepare("SELECT u.username, u.id as user_id, COUNT(p.id) as pick_count, ROUND(AVG(p.return_pct), 2) as avg_return FROM users u JOIN picks p ON p.user_id = u.id AND p.competition_id = ? GROUP BY u.id ORDER BY avg_return DESC").all(comp.id);
+    var rows = db.prepare("SELECT u.username, u.display_name, u.id as user_id, COUNT(p.id) as pick_count, ROUND(AVG(p.return_pct), 2) as avg_return FROM users u JOIN picks p ON p.user_id = u.id AND p.competition_id = ? WHERE p.entry_price > 0 GROUP BY u.id ORDER BY avg_return DESC").all(comp.id);
 
-    res.json({ leaderboard: rows, competition: comp });
+    var leaderboard = rows.map(function(r, i) {
+      return { rank: i + 1, user_id: r.user_id, username: r.username, display_name: r.display_name || r.username, pick_count: r.pick_count, avg_return: r.avg_return || 0 };
+    });
+
+    res.json({ leaderboard: leaderboard, competition: comp });
   } catch (err) {
     console.error('GET /leaderboard error:', err);
     res.status(500).json({ error: 'Server error' });
