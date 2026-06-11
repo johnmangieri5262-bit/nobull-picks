@@ -8,8 +8,7 @@ const fs = require('fs');
 
 
 
-const DB_PATH = process.env.DB_PATH || './data/nobullpicks.db';
-
+const DB_PATH = process.env.DB_PATH || '/app/server/data/nobullpicks.db';
 
 
 // Ensure data directory exists
