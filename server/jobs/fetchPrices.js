@@ -43,7 +43,7 @@ function fetchFMP(symbol, type) {
 function fetchFinnhub(symbol, type) {
   return new Promise(function(resolve, reject) {
     var finnhubSymbol = type === 'crypto' ? (CRYPTO_MAP[symbol] || 'BINANCE:' + symbol + 'USDT') : symbol;
-    var url = 'https://finnhub.io/api/v1/quote?symbol=' + encodeURIComponent(finnhubSymbol) + '&token=[REDACTED_PARAM] + FINNHUB_KEY;
+    var url = 'https://finnhub.io/api/v1/quote?symbol=' + encodeURIComponent(finnhubSymbol) + '&token=' + FINNHUB_KEY;
     https.get(url, function(res) {
       var data = '';
       res.on('data', function(chunk) { data += chunk; });
