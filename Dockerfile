@@ -31,7 +31,6 @@ ENV DB_PATH=./data/nobullpicks.db
 
 WORKDIR /app/server
 
-USER appuser
 
 EXPOSE 3000
 
