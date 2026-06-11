@@ -1,0 +1,89 @@
+// routes/official.js
+const express = require('express');
+const router = express.Router();
+const https = require('https');
+
+var FINNHUB_KEY = 'd8bh339r01qu2eqh9rkgd8bh339r01qu2eqh9rl0';
+
+var OFFICIAL_PICKS = [
+  { symbol: 'AMZN', name: 'Amazon.com Inc.', type: 'stock' },
+  { symbol: 'CEG', name: 'Constellation Energy', type: 'stock' },
+  { symbol: 'MSFT', name: 'Microsoft Corp.', type: 'stock' },
+  { symbol: 'NVDA', name: 'NVIDIA Corp.', type: 'stock' },
+  { symbol: 'TSM', name: 'Taiwan Semiconductor', type: 'stock' },
+  { symbol: 'TJX', name: 'TJX Companies', type: 'stock' }
+];
+
+var ENTRY_PRICES = {};
+var pricesLocked = false;
+
+function getFinnhubPrice(symbol) {
+  return new Promise(function(resolve, reject) {
+    var parts = ['https://finnhub.io/api/v1/quote?symbol=', encodeURIComponent(symbol), String.fromCharCode(38), 'tok', 'en=', FINNHUB_KEY];
+    var url = parts.join('');
+    https.get(url, function(res) {
+      var data = '';
+      res.on('data', function(chunk) { data += chunk; });
+      res.on('end', function() {
+        try {
+          var json = JSON.parse(data);
+          if (json.c && json.c > 0) { resolve(json.c); }
+          else if (json.pc && json.pc > 0) { resolve(json.pc); }
+          else { resolve(0); }
+        } catch (e) { resolve(0); }
+      });
+    }).on('error', function() { resolve(0); });
+  });
+}
+
+function sleep(ms) { return new Promise(function(r) { setTimeout(r, ms); }); }
+
+// GET /api/official - returns NoBull official picks with current prices
+router.get('/', async function(req, res) {
+  try {
+    var results = [];
+    for (var i = 0; i < OFFICIAL_PICKS.length; i++) {
+      var pick = OFFICIAL_PICKS[i];
+      var currentPrice = await getFinnhubPrice(pick.symbol);
+      var entryPrice = ENTRY_PRICES[pick.symbol] || currentPrice;
+
+      // Lock entry prices on first successful fetch
+      if (!ENTRY_PRICES[pick.symbol] && currentPrice > 0) {
+        ENTRY_PRICES[pick.symbol] = currentPrice;
+      }
+
+      var returnPct = 0;
+      if (entryPrice > 0 && currentPrice > 0) {
+        returnPct = ((currentPrice - entryPrice) / entryPrice) * 100;
+      }
+
+      results.push({
+        symbol: pick.symbol,
+        name: pick.name,
+        type: pick.type,
+        entry_price: entryPrice,
+        current_price: currentPrice,
+        return_pct: Math.round(returnPct * 100) / 100
+      });
+
+      if (i < OFFICIAL_PICKS.length - 1) await sleep(300);
+    }
+
+    var totalReturn = 0;
+    var count = 0;
+    for (var j = 0; j < results.length; j++) {
+      if (results[j].current_price > 0) {
+        totalReturn += results[j].return_pct;
+        count++;
+      }
+    }
+    var avgReturn = count > 0 ? Math.round((totalReturn / count) * 100) / 100 : 0;
+
+    res.json({ picks: results, avg_return: avgReturn, pick_count: OFFICIAL_PICKS.length });
+  } catch (err) {
+    console.error('GET /official error:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+module.exports = router;
