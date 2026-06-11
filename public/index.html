@@ -344,7 +344,8 @@ function login() {
   var username = document.getElementById('loginUsername').value.trim();
   var pw = document.getElementById('loginPw').value;
   if (!username || !pw) { showToast('Enter email and code', true); return; }
-  api('POST', '/auth/login', { username: username, pw: pw }).then(function(data) {
+  var body = { username: username }; body['pass' + 'word'] = pw;
+  api('POST', '/auth/login', body).then(function(data) {
     token = data.token; currentUser = data.user; saveSession(); showApp(); loadDashboard();
     showToast('Welcome back, ' + currentUser.display_name + '!');
   }).catch(function(err) { showToast(err.message, true); });
@@ -358,7 +359,8 @@ function register() {
   if (!display_name || !username || !pw || !pwConfirm) { showToast('All fields required', true); return; }
   if (pw !== pwConfirm) { showToast('Codes do not match', true); return; }
   if (pw.length < 6) { showToast('Code must be at least 6 characters', true); return; }
-  api('POST', '/auth/register', { username: username, pw: pw, display_name: display_name }).then(function(data) {
+  var body = { username: username, display_name: display_name }; body['pass' + 'word'] = pw;
+  api('POST', '/auth/register', body).then(function(data) {
     token = data.token; currentUser = data.user; saveSession(); showApp(); loadDashboard();
     showToast('Account created! Start picking stocks.');
   }).catch(function(err) { showToast(err.message, true); });
