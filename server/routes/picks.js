@@ -8,14 +8,14 @@ const { authenticate: auth } = require('../middleware/auth');
 var FINNHUB_KEY = 'd8bh339r01qu2eqh9rkgd8bh339r01qu2eqh9rl0';
 
 var CRYPTO_IDS = {
-  'BTC': 'bitcoin', 'ETH': 'ethereum', 'SOL': 'solana',
-  'ADA': 'cardano', 'DOGE': 'dogecoin', 'XRP': 'ripple',
-  'AVAX': 'avalanche-2', 'DOT': 'polkadot', 'LINK': 'chainlink',
-  'MATIC': 'matic-network', 'BNB': 'binancecoin', 'SHIB': 'shiba-inu',
-  'UNI': 'uniswap', 'ATOM': 'cosmos', 'LTC': 'litecoin',
-  'FIL': 'filecoin', 'APT': 'aptos', 'ARB': 'arbitrum',
-  'OP': 'optimism', 'NEAR': 'near', 'ICP': 'internet-computer',
-  'IMX': 'immutable-x', 'AAVE': 'aave', 'MKR': 'maker', 'PEPE': 'pepe'
+  'BTC': 'btc-bitcoin', 'ETH': 'eth-ethereum', 'SOL': 'sol-solana',
+  'ADA': 'ada-cardano', 'DOGE': 'doge-dogecoin', 'XRP': 'xrp-xrp',
+  'AVAX': 'avax-avalanche', 'DOT': 'dot-polkadot', 'LINK': 'link-chainlink',
+  'MATIC': 'matic-polygon', 'BNB': 'bnb-binance-coin', 'SHIB': 'shib-shiba-inu',
+  'UNI': 'uni-uniswap', 'ATOM': 'atom-cosmos', 'LTC': 'ltc-litecoin',
+  'FIL': 'fil-filecoin', 'APT': 'apt-aptos', 'ARB': 'arb-arbitrum',
+  'OP': 'op-optimism', 'NEAR': 'near-near-protocol', 'ICP': 'icp-internet-computer',
+  'IMX': 'imx-immutable-x', 'AAVE': 'aave-new', 'MKR': 'mkr-maker', 'PEPE': 'pepe-pepe'
 };
 
 var CRYPTO_SYMBOLS = Object.keys(CRYPTO_IDS);
@@ -48,20 +48,32 @@ function getFinnhubPrice(symbol) {
 
 function getCryptoPrice(symbol) {
   return new Promise(function(resolve, reject) {
-    var coinId = CRYPTO_IDS[symbol] || symbol.toLowerCase();
-    var url = 'https://api.coingecko.com/api/v3/simple/price?ids=' + coinId + String.fromCharCode(38) + 'vs_currencies=usd';
-    https.get(url, function(res) {
+    var coinId = CRYPTO_IDS[symbol] || symbol.toLowerCase() + '-' + symbol.toLowerCase();
+    var options = {
+      hostname: 'api.coinpaprika.com',
+      path: '/v1/tickers/' + coinId,
+      method: 'GET',
+      headers: { 'User-Agent': 'NoBullPicks/1.0', 'Accept': 'application/json' }
+    };
+    console.log('Crypto fetch: ' + coinId);
+    var req = https.request(options, function(res) {
       var data = '';
       res.on('data', function(chunk) { data += chunk; });
       res.on('end', function() {
+        console.log('Crypto response (' + res.statusCode + '): ' + data.substring(0, 120));
         try {
           var json = JSON.parse(data);
-          if (json[coinId] && json[coinId].usd > 0) {
-            resolve(json[coinId].usd);
+          if (json.quotes && json.quotes.USD && json.quotes.USD.price > 0) {
+            resolve(json.quotes.USD.price);
           } else { reject(new Error('No crypto price for ' + symbol)); }
-        } catch (e) { reject(new Error('Crypto parse error')); }
+        } catch (e) { reject(new Error('Crypto parse error: ' + data.substring(0, 50))); }
       });
-    }).on('error', reject);
+    });
+    req.on('error', function(err) {
+      console.error('Crypto request error: ' + err.message);
+      reject(err);
+    });
+    req.end();
   });
 }
 
