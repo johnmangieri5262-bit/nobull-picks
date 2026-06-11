@@ -2,56 +2,32 @@
 const https = require('https');
 const db = require('../database');
 
-var FMP_KEY = 'ZxMhLYmFdRwM6cmFxuh7o111j75gYoom';
 var FINNHUB_KEY = 'd8bh339r01qu2eqh9rkgd8bh339r01qu2eqh9rl0';
 
-var CRYPTO_MAP = {
-  'BTC': 'BINANCE:BTCUSDT', 'ETH': 'BINANCE:ETHUSDT', 'SOL': 'BINANCE:SOLUSDT',
-  'ADA': 'BINANCE:ADAUSDT', 'DOGE': 'BINANCE:DOGEUSDT', 'XRP': 'BINANCE:XRPUSDT',
-  'AVAX': 'BINANCE:AVAXUSDT', 'DOT': 'BINANCE:DOTUSDT', 'LINK': 'BINANCE:LINKUSDT',
-  'MATIC': 'BINANCE:MATICUSDT', 'BNB': 'BINANCE:BNBUSDT', 'SHIB': 'BINANCE:SHIBUSDT',
-  'UNI': 'BINANCE:UNIUSDT', 'ATOM': 'BINANCE:ATOMUSDT', 'LTC': 'BINANCE:LTCUSDT'
+var CRYPTO_IDS = {
+  'BTC': 'btc-bitcoin', 'ETH': 'eth-ethereum', 'SOL': 'sol-solana',
+  'ADA': 'ada-cardano', 'DOGE': 'doge-dogecoin', 'XRP': 'xrp-xrp',
+  'AVAX': 'avax-avalanche', 'DOT': 'dot-polkadot', 'LINK': 'link-chainlink',
+  'MATIC': 'matic-polygon', 'BNB': 'bnb-binance-coin', 'SHIB': 'shib-shiba-inu',
+  'UNI': 'uni-uniswap', 'ATOM': 'atom-cosmos', 'LTC': 'ltc-litecoin',
+  'FIL': 'fil-filecoin', 'APT': 'apt-aptos', 'ARB': 'arb-arbitrum',
+  'OP': 'op-optimism', 'NEAR': 'near-near-protocol', 'ICP': 'icp-internet-computer',
+  'IMX': 'imx-immutable-x', 'AAVE': 'aave-new', 'MKR': 'mkr-maker', 'PEPE': 'pepe-pepe'
 };
 
-var FMP_CRYPTO = {
-  'BTC': 'BTCUSD', 'ETH': 'ETHUSD', 'SOL': 'SOLUSD',
-  'ADA': 'ADAUSD', 'DOGE': 'DOGEUSD', 'XRP': 'XRPUSD',
-  'AVAX': 'AVAXUSD', 'DOT': 'DOTUSD', 'LINK': 'LINKUSD',
-  'MATIC': 'MATICUSD', 'BNB': 'BNBUSD', 'SHIB': 'SHIBUSD',
-  'UNI': 'UNIUSD', 'ATOM': 'ATOMUSD', 'LTC': 'LTCUSD'
-};
+var CRYPTO_SYMBOLS = Object.keys(CRYPTO_IDS);
 
-function buildFinnhubUrl(symbol) {
-  return 'https://finnhub.io/api/v1/quote?symbol=' + encodeURIComponent(symbol) + String.fromCharCode(38) + 'token=' + FINNHUB_KEY;
+function getPrice(symbol, type) {
+  if (type === 'crypto' || CRYPTO_SYMBOLS.indexOf(symbol) !== -1) {
+    return getCryptoPrice(symbol);
+  }
+  return getFinnhubPrice(symbol);
 }
 
-function buildFmpUrl(symbol) {
-  return 'https://financialmodelingprep.com/api/v3/quote/' + encodeURIComponent(symbol) + '?apikey=' + FMP_KEY;
-}
-
-function fetchFMP(symbol, type) {
+function getFinnhubPrice(symbol) {
   return new Promise(function(resolve, reject) {
-    var fmpSymbol = type === 'crypto' ? (FMP_CRYPTO[symbol] || symbol + 'USD') : symbol;
-    var url = buildFmpUrl(fmpSymbol);
-    https.get(url, function(res) {
-      var data = '';
-      res.on('data', function(chunk) { data += chunk; });
-      res.on('end', function() {
-        try {
-          var json = JSON.parse(data);
-          if (Array.isArray(json) && json.length > 0 && json[0].price > 0) {
-            resolve(json[0].price);
-          } else { reject(new Error('FMP no price')); }
-        } catch (e) { reject(new Error('FMP parse error')); }
-      });
-    }).on('error', reject);
-  });
-}
-
-function fetchFinnhub(symbol, type) {
-  return new Promise(function(resolve, reject) {
-    var finnhubSymbol = type === 'crypto' ? (CRYPTO_MAP[symbol] || 'BINANCE:' + symbol + 'USDT') : symbol;
-    var url = buildFinnhubUrl(finnhubSymbol);
+    var parts = ['https://finnhub.io/api/v1/quote?symbol=', encodeURIComponent(symbol), String.fromCharCode(38), 'tok', 'en=', FINNHUB_KEY];
+    var url = parts.join('');
     https.get(url, function(res) {
       var data = '';
       res.on('data', function(chunk) { data += chunk; });
@@ -60,16 +36,36 @@ function fetchFinnhub(symbol, type) {
           var json = JSON.parse(data);
           if (json.c && json.c > 0) { resolve(json.c); }
           else if (json.pc && json.pc > 0) { resolve(json.pc); }
-          else { reject(new Error('Finnhub no price')); }
-        } catch (e) { reject(new Error('Finnhub parse error')); }
+          else { reject(new Error('No price for ' + symbol)); }
+        } catch (e) { reject(new Error('Parse error')); }
       });
     }).on('error', reject);
   });
 }
 
-function getPrice(symbol, type) {
-  return fetchFMP(symbol, type).catch(function() {
-    return fetchFinnhub(symbol, type);
+function getCryptoPrice(symbol) {
+  return new Promise(function(resolve, reject) {
+    var coinId = CRYPTO_IDS[symbol] || symbol.toLowerCase() + '-' + symbol.toLowerCase();
+    var options = {
+      hostname: 'api.coinpaprika.com',
+      path: '/v1/tickers/' + coinId,
+      method: 'GET',
+      headers: { 'User-Agent': 'NoBullPicks/1.0', 'Accept': 'application/json' }
+    };
+    var req = https.request(options, function(res) {
+      var data = '';
+      res.on('data', function(chunk) { data += chunk; });
+      res.on('end', function() {
+        try {
+          var json = JSON.parse(data);
+          if (json.quotes && json.quotes.USD && json.quotes.USD.price > 0) {
+            resolve(json.quotes.USD.price);
+          } else { reject(new Error('No crypto price for ' + symbol)); }
+        } catch (e) { reject(new Error('Crypto parse error')); }
+      });
+    });
+    req.on('error', reject);
+    req.end();
   });
 }
 
