@@ -3,8 +3,7 @@ const express = require('express');
 const router = express.Router();
 const https = require('https');
 const db = require('../database');
-const auth = require('../middleware/auth');
-
+const { authenticate: auth } = require('../middleware/auth');
 var FMP_KEY = 'ZxMhLYmFdRwM6cmFxuh7o111j75gYoom';
 var FINNHUB_KEY = 'd8bh339r01qu2eqh9rkgd8bh339r01qu2eqh9rl0';
 
