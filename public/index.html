@@ -570,7 +570,16 @@ function formatDate(dateStr) {
   var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   return months[d.getMonth()] + ' ' + d.getDate() + ', ' + d.getFullYear();
 }
-
+function formatDateTime(dt) {
+  if (!dt) return '';
+  var d = new Date(dt + 'Z');
+  var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  var h = d.getHours(); var m = d.getMinutes();
+  var ampm = h >= 12 ? 'PM' : 'AM';
+  h = h % 12; if (h === 0) h = 12;
+  var min = m < 10 ? '0' + m : m;
+  return months[d.getMonth()] + ' ' + d.getDate() + ', ' + h + ':' + min + ' ' + ampm;
+}
 function showToast(msg, isError) {
   var toast = document.getElementById('toast');
   toast.textContent = msg;
