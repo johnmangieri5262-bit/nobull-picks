@@ -21,10 +21,18 @@ var FMP_CRYPTO = {
   'UNI': 'UNIUSD', 'ATOM': 'ATOMUSD', 'LTC': 'LTCUSD'
 };
 
+function buildFinnhubUrl(symbol) {
+  return 'https://finnhub.io/api/v1/quote?symbol=' + encodeURIComponent(symbol) + String.fromCharCode(38) + 'token=' + FINNHUB_KEY;
+}
+
+function buildFmpUrl(symbol) {
+  return 'https://financialmodelingprep.com/api/v3/quote/' + encodeURIComponent(symbol) + '?apikey=' + FMP_KEY;
+}
+
 function fetchFMP(symbol, type) {
   return new Promise(function(resolve, reject) {
     var fmpSymbol = type === 'crypto' ? (FMP_CRYPTO[symbol] || symbol + 'USD') : symbol;
-    var url = 'https://financialmodelingprep.com/api/v3/quote/' + encodeURIComponent(fmpSymbol) + '?apikey=' + FMP_KEY;
+    var url = buildFmpUrl(fmpSymbol);
     https.get(url, function(res) {
       var data = '';
       res.on('data', function(chunk) { data += chunk; });
@@ -43,7 +51,7 @@ function fetchFMP(symbol, type) {
 function fetchFinnhub(symbol, type) {
   return new Promise(function(resolve, reject) {
     var finnhubSymbol = type === 'crypto' ? (CRYPTO_MAP[symbol] || 'BINANCE:' + symbol + 'USDT') : symbol;
-    var url = 'https://finnhub.io/api/v1/quote?symbol=' + encodeURIComponent(finnhubSymbol) + '&token=' + FINNHUB_KEY;
+    var url = buildFinnhubUrl(finnhubSymbol);
     https.get(url, function(res) {
       var data = '';
       res.on('data', function(chunk) { data += chunk; });
