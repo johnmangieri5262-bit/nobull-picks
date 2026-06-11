@@ -224,7 +224,17 @@ cron.schedule('*/15 * * * 0,6', () => {
 
 // ==================== STARTUP ====================
 initWebSocket(server);
-
+app.get('/api/debug-path', (req, res) => {
+  var fs = require('fs');
+  var p = require('path');
+  var resolved = p.resolve('./data/nobullpicks.db');
+  var envDB = process.env.DB_PATH || 'NOT SET';
+  var volExists = fs.existsSync('/app/server/data');
+  var dbExists = fs.existsSync(resolved);
+  var files = [];
+  try { files = fs.readdirSync('/app/server/data'); } catch(e) { files = ['ERROR: ' + e.message]; }
+  res.json({ cwd: process.cwd(), resolved: resolved, envDB: envDB, volumeExists: volExists, dbExists: dbExists, filesInVolume: files });
+});
 server.listen(PORT, () => {
   console.log(`
   ╔══════════════════════════════════════════╗
