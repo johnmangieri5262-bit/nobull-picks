@@ -128,4 +128,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { fetchPrices };
+module.exports = router;
