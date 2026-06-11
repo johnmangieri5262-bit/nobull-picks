@@ -30,6 +30,64 @@ const { fetchPrices } = require('./jobs/fetchPrices');
     console.log('Auto-seeded Q3 2026 competition (drafting)');
   }
 })();
+// Auto-seed NoBull Official picks
+async function seedOfficialPicks() {
+  try {
+    var existing = db.prepare("SELECT id FROM users WHERE username = 'nobull_official'").get();
+    if (existing) return; // Already seeded
+
+    var bcrypt = require('bcrypt');
+    var hash = bcrypt.hashSync('nobull2026official', 10);
+    var result = db.prepare("INSERT INTO users (username, display_name, pw_hash) VALUES (?, ?, ?)").run('nobull_official', 'NoBull Official', hash);
+    var userId = result.lastInsertRowid;
+    console.log('Created NoBull Official user, id=' + userId);
+
+    var comp = db.prepare("SELECT * FROM competitions WHERE status IN ('drafting', 'active') ORDER BY id DESC LIMIT 1").get();
+    if (!comp) { console.log('No competition for official picks'); return; }
+
+    var https = require('https');
+    var FINNHUB_KEY = 'd8bh339r01qu2eqh9rkgd8bh339r01qu2eqh9rl0';
+
+    function fetchPrice(symbol) {
+      return new Promise(function(resolve) {
+        var parts = ['https://finnhub.io/api/v1/quote?symbol=', encodeURIComponent(symbol), String.fromCharCode(38), 'tok', 'en=', FINNHUB_KEY];
+        var url = parts.join('');
+        https.get(url, function(res) {
+          var data = '';
+          res.on('data', function(chunk) { data += chunk; });
+          res.on('end', function() {
+            try { var j = JSON.parse(data); resolve(j.c > 0 ? j.c : (j.pc > 0 ? j.pc : 0)); }
+            catch(e) { resolve(0); }
+          });
+        }).on('error', function() { resolve(0); });
+      });
+    }
+
+    var picks = [
+      { symbol: 'AMZN', name: 'Amazon.com Inc.', type: 'stock' },
+      { symbol: 'CEG', name: 'Constellation Energy', type: 'stock' },
+      { symbol: 'MSFT', name: 'Microsoft Corp.', type: 'stock' },
+      { symbol: 'NVDA', name: 'NVIDIA Corp.', type: 'stock' },
+      { symbol: 'TSM', name: 'Taiwan Semiconductor', type: 'stock' },
+      { symbol: 'TJX', name: 'TJX Companies', type: 'stock' }
+    ];
+
+    for (var i = 0; i < picks.length; i++) {
+      var p = picks[i];
+      var price = await fetchPrice(p.symbol);
+      if (price > 0) {
+        db.prepare('INSERT INTO picks (user_id, competition_id, symbol, name, type, entry_price, current_price, locked) VALUES (?, ?, ?, ?, ?, ?, ?, 1)').run(userId, comp.id, p.symbol, p.name, p.type, price, price);
+        console.log('  Official pick: ' + p.symbol + ' @ $' + price.toFixed(2));
+      }
+      await new Promise(function(r) { setTimeout(r, 1200); });
+    }
+    console.log('NoBull Official picks seeded!');
+  } catch(err) {
+    console.error('seedOfficialPicks error:', err.message);
+  }
+}
+
+seedOfficialPicks();
 
 const app = express();
 const server = http.createServer(app);
