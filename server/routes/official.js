@@ -63,7 +63,8 @@ router.get('/', async function(req, res) {
         type: pick.type,
         entry_price: entryPrice,
         current_price: currentPrice,
-        return_pct: Math.round(returnPct * 100) / 100
+               return_pct: Math.round(returnPct * 100) / 100,
+        added_at: '2026-06-11T14:00:00'
       });
 
       if (i < OFFICIAL_PICKS.length - 1) await sleep(300);
