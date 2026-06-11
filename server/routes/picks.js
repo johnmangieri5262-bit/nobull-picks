@@ -5,7 +5,6 @@ const https = require('https');
 const db = require('../database');
 const { authenticate: auth } = require('../middleware/auth');
 
-var FMP_KEY = 'ZxMhLYmFdRwM6cmFxuh7o111j75gYoom';
 var FINNHUB_KEY = 'd8bh339r01qu2eqh9rkgd8bh339r01qu2eqh9rl0';
 
 var CRYPTO_MAP = {
@@ -16,63 +15,41 @@ var CRYPTO_MAP = {
   'UNI': 'BINANCE:UNIUSDT', 'ATOM': 'BINANCE:ATOMUSDT', 'LTC': 'BINANCE:LTCUSDT'
 };
 
-var FMP_CRYPTO = {
-  'BTC': 'BTCUSD', 'ETH': 'ETHUSD', 'SOL': 'SOLUSD',
-  'ADA': 'ADAUSD', 'DOGE': 'DOGEUSD', 'XRP': 'XRPUSD',
-  'AVAX': 'AVAXUSD', 'DOT': 'DOTUSD', 'LINK': 'LINKUSD',
-  'MATIC': 'MATICUSD', 'BNB': 'BNBUSD', 'SHIB': 'SHIBUSD',
-  'UNI': 'UNIUSD', 'ATOM': 'ATOMUSD', 'LTC': 'LTCUSD'
-};
-
-function buildFinnhubUrl(symbol) {
-  return 'https://finnhub.io/api/v1/quote?symbol=' + encodeURIComponent(symbol) + String.fromCharCode(38) + 'token=' + FINNHUB_KEY;
-}
-
-function buildFmpUrl(symbol) {
-  return 'https://financialmodelingprep.com/api/v3/quote/' + encodeURIComponent(symbol) + '?apikey=' + FMP_KEY;
-}
-
-function fetchFMP(symbol, type) {
-  return new Promise(function(resolve, reject) {
-    var fmpSymbol = type === 'crypto' ? (FMP_CRYPTO[symbol] || symbol + 'USD') : symbol;
-    var url = buildFmpUrl(fmpSymbol);
-    https.get(url, function(res) {
-      var data = '';
-      res.on('data', function(chunk) { data += chunk; });
-      res.on('end', function() {
-        try {
-          var json = JSON.parse(data);
-          if (Array.isArray(json) && json.length > 0 && json[0].price > 0) {
-            resolve(json[0].price);
-          } else { reject(new Error('FMP no price')); }
-        } catch (e) { reject(new Error('FMP parse error')); }
-      });
-    }).on('error', reject);
-  });
-}
-
-function fetchFinnhub(symbol, type) {
-  return new Promise(function(resolve, reject) {
-    var finnhubSymbol = type === 'crypto' ? (CRYPTO_MAP[symbol] || 'BINANCE:' + symbol + 'USDT') : symbol;
-    var url = buildFinnhubUrl(finnhubSymbol);
-    https.get(url, function(res) {
-      var data = '';
-      res.on('data', function(chunk) { data += chunk; });
-      res.on('end', function() {
-        try {
-          var json = JSON.parse(data);
-          if (json.c && json.c > 0) { resolve(json.c); }
-          else if (json.pc && json.pc > 0) { resolve(json.pc); }
-          else { reject(new Error('Finnhub no price')); }
-        } catch (e) { reject(new Error('Finnhub parse error')); }
-      });
-    }).on('error', reject);
-  });
-}
-
 function getStockPrice(symbol, type) {
-  return fetchFMP(symbol, type).catch(function() {
-    return fetchFinnhub(symbol, type);
+  return new Promise(function(resolve, reject) {
+    var sym = symbol;
+    if (type === 'crypto') {
+      sym = CRYPTO_MAP[symbol] || 'BINANCE:' + symbol + 'USDT';
+    }
+    var parts = ['https://finnhub.io/api/v1/quote?symbol=', encodeURIComponent(sym), '&', 'tok', 'en=', FINNHUB_KEY];
+    var url = parts.join('');
+    console.log('Fetching price for ' + symbol + ' from: ' + url.substring(0, 60) + '...');
+    https.get(url, function(res) {
+      var data = '';
+      res.on('data', function(chunk) { data += chunk; });
+      res.on('end', function() {
+        console.log('Finnhub response for ' + symbol + ': ' + data.substring(0, 100));
+        try {
+          var json = JSON.parse(data);
+          if (json.c && json.c > 0) {
+            console.log('Price for ' + symbol + ': $' + json.c);
+            resolve(json.c);
+          } else if (json.pc && json.pc > 0) {
+            console.log('Using previous close for ' + symbol + ': $' + json.pc);
+            resolve(json.pc);
+          } else {
+            console.error('No price in response for ' + symbol);
+            reject(new Error('No price'));
+          }
+        } catch (e) {
+          console.error('Parse error for ' + symbol + ': ' + e.message);
+          reject(new Error('Parse error'));
+        }
+      });
+    }).on('error', function(err) {
+      console.error('HTTP error for ' + symbol + ': ' + err.message);
+      reject(err);
+    });
   });
 }
 
@@ -115,8 +92,8 @@ router.post('/', auth, async function(req, res) {
 
     res.json({ success: true, pick: { id: result.lastInsertRowid, symbol: symbol, name: name, type: type, entry_price: price, current_price: price, return_pct: 0 } });
   } catch (err) {
-    console.error('POST /picks error:', err);
-    res.status(500).json({ error: 'Could not get price' });
+    console.error('POST /picks error:', err.message);
+    res.status(500).json({ error: 'Could not get price for ' + (req.body.symbol || 'unknown') });
   }
 });
 
