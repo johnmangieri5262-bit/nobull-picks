@@ -38,7 +38,7 @@ async function seedOfficialPicks() {
 
     var bcrypt = require('bcrypt');
     var hash = bcrypt.hashSync('nobull2026official', 10);
-    var result = db.prepare("INSERT INTO users (username, display_name, pw_hash) VALUES (?, ?, ?)").run('nobull_official', 'NoBull Official', hash);
+    var result = db.prepare("INSERT INTO users (username, display_name, password_hash) VALUES (?, ?, ?)").run('nobull_official', 'NoBull Official', hash);
     var userId = result.lastInsertRowid;
     console.log('Created NoBull Official user, id=' + userId);
 
