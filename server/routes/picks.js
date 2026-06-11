@@ -1,6 +1,9 @@
-// jobs/fetchPrices.js - Fetch current prices and update picks
+// routes/picks.js
+const express = require('express');
+const router = express.Router();
 const https = require('https');
 const db = require('../database');
+const auth = require('../middleware/auth');
 
 var FMP_KEY = 'ZxMhLYmFdRwM6cmFxuh7o111j75gYoom';
 var FINNHUB_KEY = 'd8bh339r01qu2eqh9rkgd8bh339r01qu2eqh9rl0';
@@ -41,7 +44,7 @@ function fetchFMP(symbol, type) {
           var json = JSON.parse(data);
           if (Array.isArray(json) && json.length > 0 && json[0].price > 0) {
             resolve(json[0].price);
-          } else { reject(new Error('FMP no price')); }
+          } else { reject(new Error('FMP no price for ' + fmpSymbol)); }
         } catch (e) { reject(new Error('FMP parse error')); }
       });
     }).on('error', reject);
@@ -67,65 +70,90 @@ function fetchFinnhub(symbol, type) {
   });
 }
 
-function getPrice(symbol, type) {
+function getStockPrice(symbol, type) {
   return fetchFMP(symbol, type).catch(function() {
     return fetchFinnhub(symbol, type);
   });
 }
 
-function sleep(ms) { return new Promise(function(r) { setTimeout(r, ms); }); }
-
-async function fetchPrices() {
-  console.log('[' + new Date().toISOString() + '] Starting price fetch...');
-
-  var symbols = db.prepare(
-    "SELECT DISTINCT p.symbol, p.type FROM picks p JOIN competitions c ON c.id = p.competition_id WHERE c.status IN ('drafting', 'active')"
-  ).all();
-
-  if (symbols.length === 0) { console.log('No active picks to update.'); return; }
-  console.log('Fetching prices for ' + symbols.length + ' symbols...');
-
-  var updated = 0, failed = 0;
-  for (var i = 0; i < symbols.length; i++) {
-    var sym = symbols[i].symbol, typ = symbols[i].type;
-    try {
-      var price = await getPrice(sym, typ);
-      db.prepare('UPDATE picks SET current_price = ? WHERE symbol = ?').run(price, sym);
-      db.prepare('UPDATE picks SET return_pct = ROUND(((? - entry_price) / entry_price) * 100, 2) WHERE symbol = ? AND locked = 1 AND entry_price > 0').run(price, sym);
-      db.prepare('INSERT INTO price_history (symbol, price) VALUES (?, ?)').run(sym, price);
-      updated++;
-      console.log('  ' + sym + ': $' + price.toFixed(2));
-      await sleep(1200);
-    } catch (err) {
-      console.error('  Error: ' + sym + ': ' + err.message);
-      failed++;
-      await sleep(500);
-    }
+// GET /api/picks - get user's picks for active competition
+router.get('/', auth, function(req, res) {
+  try {
+    var comp = db.prepare("SELECT * FROM competitions WHERE status IN ('drafting', 'active') ORDER BY created_at DESC LIMIT 1").get();
+    if (!comp) return res.json({ picks: [], competition: null });
+    var picks = db.prepare('SELECT * FROM picks WHERE user_id = ? AND competition_id = ? ORDER BY created_at DESC').all(req.user.id, comp.id);
+    res.json({ picks: picks, competition: comp });
+  } catch (err) {
+    console.error('GET /picks error:', err);
+    res.status(500).json({ error: 'Server error' });
   }
+});
 
-  // Also update league picks
-  var leagueSymbols = db.prepare(
-    "SELECT DISTINCT lp.symbol, lp.type FROM league_picks lp JOIN leagues l ON l.id = lp.league_id WHERE l.start_date <= date('now') AND l.end_date >= date('now')"
-  ).all();
+// POST /api/picks - add a pick
+router.post('/', auth, async function(req, res) {
+  try {
+    var symbol = (req.body.symbol || '').toUpperCase().trim();
+    var name = req.body.name || symbol;
+    var type = req.body.type || 'stock';
 
-  for (var j = 0; j < leagueSymbols.length; j++) {
-    var s = leagueSymbols[j].symbol, t = leagueSymbols[j].type;
-    try {
-      var p = await getPrice(s, t);
-      db.prepare('UPDATE league_picks SET current_price = ? WHERE symbol = ?').run(p, s);
-      db.prepare('UPDATE league_picks SET return_pct = ROUND(((? - entry_price) / entry_price) * 100, 2) WHERE symbol = ? AND entry_price > 0').run(p, s);
-      await sleep(1200);
-    } catch (err) { await sleep(500); }
+    if (!symbol) return res.status(400).json({ error: 'Symbol required' });
+
+    var comp = db.prepare("SELECT * FROM competitions WHERE status IN ('drafting', 'active') ORDER BY created_at DESC LIMIT 1").get();
+    if (!comp) return res.status(400).json({ error: 'No active competition' });
+
+    var existing = db.prepare('SELECT COUNT(*) as cnt FROM picks WHERE user_id = ? AND competition_id = ?').get(req.user.id, comp.id);
+    if (existing.cnt >= comp.max_picks) return res.status(400).json({ error: 'Max picks reached (' + comp.max_picks + ')' });
+
+    var dupe = db.prepare('SELECT id FROM picks WHERE user_id = ? AND competition_id = ? AND symbol = ?').get(req.user.id, comp.id, symbol);
+    if (dupe) return res.status(400).json({ error: 'You already picked ' + symbol });
+
+    var price = await getStockPrice(symbol, type);
+    if (!price || price <= 0) return res.status(400).json({ error: 'Could not get price for ' + symbol });
+
+    var stmt = db.prepare('INSERT INTO picks (user_id, competition_id, symbol, name, type, entry_price, current_price, locked) VALUES (?, ?, ?, ?, ?, ?, ?, 1)');
+    var result = stmt.run(req.user.id, comp.id, symbol, name, type, price, price);
+
+    res.json({ success: true, pick: { id: result.lastInsertRowid, symbol: symbol, name: name, type: type, entry_price: price, current_price: price, return_pct: 0 } });
+  } catch (err) {
+    console.error('POST /picks error:', err);
+    res.status(500).json({ error: 'Could not get price' });
   }
+});
 
-  console.log('Done. Updated: ' + updated + ', Failed: ' + failed);
-}
+// DELETE /api/picks/:id - remove a pick
+router.delete('/:id', auth, function(req, res) {
+  try {
+    var pick = db.prepare('SELECT * FROM picks WHERE id = ? AND user_id = ?').get(req.params.id, req.user.id);
+    if (!pick) return res.status(404).json({ error: 'Pick not found' });
+    db.prepare('DELETE FROM picks WHERE id = ? AND user_id = ?').run(req.params.id, req.user.id);
+    res.json({ success: true });
+  } catch (err) {
+    console.error('DELETE /picks error:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
 
-if (require.main === module) {
-  fetchPrices().then(function() { process.exit(0); }).catch(function(err) {
-    console.error('Fatal:', err);
-    process.exit(1);
-  });
-}
+// GET /api/leaderboard
+router.get('/leaderboard', function(req, res) {
+  try {
+    var comp = db.prepare("SELECT * FROM competitions WHERE status IN ('drafting', 'active') ORDER BY created_at DESC LIMIT 1").get();
+    if (!comp) return res.json({ leaderboard: [], competition: null });
+
+    var rows = db.prepare(`
+      SELECT u.username, u.id as user_id,
+        COUNT(p.id) as pick_count,
+        ROUND(AVG(p.return_pct), 2) as avg_return
+      FROM users u
+      JOIN picks p ON p.user_id = u.id AND p.competition_id = ?
+      GROUP BY u.id
+      ORDER BY avg_return DESC
+    `).all(comp.id);
+
+    res.json({ leaderboard: rows, competition: comp });
+  } catch (err) {
+    console.error('GET /leaderboard error:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
 
 module.exports = router;
