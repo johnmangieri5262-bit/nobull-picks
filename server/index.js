@@ -62,6 +62,7 @@ app.use('/api/auth/', authLimiter);
 app.use('/api/auth', authRoutes);
 app.use('/api/competitions', competitionsRoutes);
 app.use('/api/picks', picksRoutes);
+app.use('/api/official', require('./routes/official'));
 app.use('/api/leagues', leaguesRoutes);
 app.use('/api/admin', adminRoutes);
 
