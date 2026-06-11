@@ -6,57 +6,59 @@ const db = require('../database');
 const { authenticate: auth } = require('../middleware/auth');
 
 var FINNHUB_KEY = 'd8bh339r01qu2eqh9rkgd8bh339r01qu2eqh9rl0';
-
-var CRYPTO_MAP = {
-  'BTC': 'BINANCE:BTCUSDT', 'ETH': 'BINANCE:ETHUSDT', 'SOL': 'BINANCE:SOLUSDT',
-  'ADA': 'BINANCE:ADAUSDT', 'DOGE': 'BINANCE:DOGEUSDT', 'XRP': 'BINANCE:XRPUSDT',
-  'AVAX': 'BINANCE:AVAXUSDT', 'DOT': 'BINANCE:DOTUSDT', 'LINK': 'BINANCE:LINKUSDT',
-  'MATIC': 'BINANCE:MATICUSDT', 'BNB': 'BINANCE:BNBUSDT', 'SHIB': 'BINANCE:SHIBUSDT',
-  'UNI': 'BINANCE:UNIUSDT', 'ATOM': 'BINANCE:ATOMUSDT', 'LTC': 'BINANCE:LTCUSDT'
-};
+var FMP_KEY = 'ZxMhLYmFdRwM6cmFxuh7o111j75gYoom';
 
 function getStockPrice(symbol, type) {
+  if (type === 'crypto') {
+    return getCryptoPrice(symbol);
+  }
+  return getFinnhubPrice(symbol);
+}
+
+function getFinnhubPrice(symbol) {
   return new Promise(function(resolve, reject) {
-    var sym = symbol;
-    if (type === 'crypto') {
-      sym = CRYPTO_MAP[symbol] || 'BINANCE:' + symbol + 'USDT';
-    }
-    var parts = ['https://finnhub.io/api/v1/quote?symbol=', encodeURIComponent(sym), '&', 'tok', 'en=', FINNHUB_KEY];
+    var parts = ['https://finnhub.io/api/v1/quote?symbol=', encodeURIComponent(symbol), String.fromCharCode(38), 'tok', 'en=', FINNHUB_KEY];
     var url = parts.join('');
-    console.log('Fetching price for ' + symbol + ' from: ' + url.substring(0, 60) + '...');
+    console.log('Finnhub fetch: ' + symbol);
     https.get(url, function(res) {
       var data = '';
       res.on('data', function(chunk) { data += chunk; });
       res.on('end', function() {
-        console.log('Finnhub response for ' + symbol + ': ' + data.substring(0, 100));
         try {
           var json = JSON.parse(data);
-          if (json.c && json.c > 0) {
-            console.log('Price for ' + symbol + ': $' + json.c);
-            resolve(json.c);
-          } else if (json.pc && json.pc > 0) {
-            console.log('Using previous close for ' + symbol + ': $' + json.pc);
-            resolve(json.pc);
-          } else {
-            console.error('No price in response for ' + symbol);
-            reject(new Error('No price'));
-          }
-        } catch (e) {
-          console.error('Parse error for ' + symbol + ': ' + e.message);
-          reject(new Error('Parse error'));
-        }
+          if (json.c && json.c > 0) { resolve(json.c); }
+          else if (json.pc && json.pc > 0) { resolve(json.pc); }
+          else { reject(new Error('No price for ' + symbol)); }
+        } catch (e) { reject(new Error('Parse error')); }
       });
-    }).on('error', function(err) {
-      console.error('HTTP error for ' + symbol + ': ' + err.message);
-      reject(err);
-    });
+    }).on('error', reject);
   });
 }
 
-// GET /api/picks - get user picks for active competition
+function getCryptoPrice(symbol) {
+  return new Promise(function(resolve, reject) {
+    var fmpSymbol = symbol.toUpperCase() + 'USD';
+    var url = 'https://financialmodelingprep.com/api/v3/quote/' + fmpSymbol + '?apikey=' + FMP_KEY;
+    console.log('FMP crypto fetch: ' + fmpSymbol);
+    https.get(url, function(res) {
+      var data = '';
+      res.on('data', function(chunk) { data += chunk; });
+      res.on('end', function() {
+        try {
+          var json = JSON.parse(data);
+          if (Array.isArray(json) && json.length > 0 && json[0].price > 0) {
+            resolve(json[0].price);
+          } else { reject(new Error('No crypto price for ' + symbol)); }
+        } catch (e) { reject(new Error('Crypto parse error')); }
+      });
+    }).on('error', reject);
+  });
+}
+
+// GET /api/picks
 router.get('/', auth, function(req, res) {
   try {
-    var comp = db.prepare("SELECT * FROM competitions WHERE status IN ('drafting', 'active') ORDER BY created_at DESC LIMIT 1").get();
+    var comp = db.prepare("SELECT * FROM competitions WHERE status IN ('drafting', 'active') ORDER BY id DESC LIMIT 1").get();
     if (!comp) return res.json({ picks: [], competition: null });
     var picks = db.prepare('SELECT * FROM picks WHERE user_id = ? AND competition_id = ? ORDER BY id DESC').all(req.user.id, comp.id);
     res.json({ picks: picks, competition: comp });
@@ -66,7 +68,7 @@ router.get('/', auth, function(req, res) {
   }
 });
 
-// POST /api/picks - add a pick
+// POST /api/picks
 router.post('/', auth, async function(req, res) {
   try {
     var symbol = (req.body.symbol || '').toUpperCase().trim();
@@ -75,7 +77,7 @@ router.post('/', auth, async function(req, res) {
 
     if (!symbol) return res.status(400).json({ error: 'Symbol required' });
 
-    var comp = db.prepare("SELECT * FROM competitions WHERE status IN ('drafting', 'active') ORDER BY created_at DESC LIMIT 1").get();
+    var comp = db.prepare("SELECT * FROM competitions WHERE status IN ('drafting', 'active') ORDER BY id DESC LIMIT 1").get();
     if (!comp) return res.status(400).json({ error: 'No active competition' });
 
     var existing = db.prepare('SELECT COUNT(*) as cnt FROM picks WHERE user_id = ? AND competition_id = ?').get(req.user.id, comp.id);
@@ -97,7 +99,7 @@ router.post('/', auth, async function(req, res) {
   }
 });
 
-// DELETE /api/picks/:id - remove a pick
+// DELETE /api/picks/:id
 router.delete('/:id', auth, function(req, res) {
   try {
     var pick = db.prepare('SELECT * FROM picks WHERE id = ? AND user_id = ?').get(req.params.id, req.user.id);
@@ -113,18 +115,10 @@ router.delete('/:id', auth, function(req, res) {
 // GET /api/picks/leaderboard
 router.get('/leaderboard', function(req, res) {
   try {
-    var comp = db.prepare("SELECT * FROM competitions WHERE status IN ('drafting', 'active') ORDER BY created_at DESC LIMIT 1").get();
+    var comp = db.prepare("SELECT * FROM competitions WHERE status IN ('drafting', 'active') ORDER BY id DESC LIMIT 1").get();
     if (!comp) return res.json({ leaderboard: [], competition: null });
 
-    var rows = db.prepare(`
-      SELECT u.username, u.id as user_id,
-        COUNT(p.id) as pick_count,
-        ROUND(AVG(p.return_pct), 2) as avg_return
-      FROM users u
-      JOIN picks p ON p.user_id = u.id AND p.competition_id = ?
-      GROUP BY u.id
-      ORDER BY avg_return DESC
-    `).all(comp.id);
+    var rows = db.prepare("SELECT u.username, u.id as user_id, COUNT(p.id) as pick_count, ROUND(AVG(p.return_pct), 2) as avg_return FROM users u JOIN picks p ON p.user_id = u.id AND p.competition_id = ? GROUP BY u.id ORDER BY avg_return DESC").all(comp.id);
 
     res.json({ leaderboard: rows, competition: comp });
   } catch (err) {
