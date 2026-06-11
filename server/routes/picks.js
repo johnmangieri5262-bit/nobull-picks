@@ -4,6 +4,7 @@ const router = express.Router();
 const https = require('https');
 const db = require('../database');
 const { authenticate: auth } = require('../middleware/auth');
+
 var FMP_KEY = 'ZxMhLYmFdRwM6cmFxuh7o111j75gYoom';
 var FINNHUB_KEY = 'd8bh339r01qu2eqh9rkgd8bh339r01qu2eqh9rl0';
 
@@ -43,7 +44,7 @@ function fetchFMP(symbol, type) {
           var json = JSON.parse(data);
           if (Array.isArray(json) && json.length > 0 && json[0].price > 0) {
             resolve(json[0].price);
-          } else { reject(new Error('FMP no price for ' + fmpSymbol)); }
+          } else { reject(new Error('FMP no price')); }
         } catch (e) { reject(new Error('FMP parse error')); }
       });
     }).on('error', reject);
@@ -75,7 +76,7 @@ function getStockPrice(symbol, type) {
   });
 }
 
-// GET /api/picks - get user's picks for active competition
+// GET /api/picks - get user picks for active competition
 router.get('/', auth, function(req, res) {
   try {
     var comp = db.prepare("SELECT * FROM competitions WHERE status IN ('drafting', 'active') ORDER BY created_at DESC LIMIT 1").get();
@@ -132,7 +133,7 @@ router.delete('/:id', auth, function(req, res) {
   }
 });
 
-// GET /api/leaderboard
+// GET /api/picks/leaderboard
 router.get('/leaderboard', function(req, res) {
   try {
     var comp = db.prepare("SELECT * FROM competitions WHERE status IN ('drafting', 'active') ORDER BY created_at DESC LIMIT 1").get();
