@@ -428,7 +428,7 @@ function loadLeaderboard() {
 function loadMyPicks() {
   if (!activeCompetition) { setTimeout(loadMyPicks, 1000); return; }
   api('GET', '/picks?competition_id=' + activeCompetition.id).then(function(data) {
-    myPicks = data.picks; renderPicks();
+myPicks = data.picks; renderPicks(); loadMyLeaguePicks();
   }).catch(function() {
     document.getElementById('picksGrid').innerHTML = '<div class="empty-state">Could not load picks</div>';
   });
@@ -440,7 +440,32 @@ function loadHistory() {
     renderHistory(ended);
   }).catch(function() {});
 }
-
+function loadMyLeaguePicks() {
+  api('GET', '/leagues').then(function(data) {
+    if (!data.leagues || data.leagues.length === 0) { document.getElementById('leaguePicksCard').style.display = 'none'; return; }
+    var allDone = [];
+    data.leagues.forEach(function(lg) {
+      allDone.push(api('GET', '/leagues/' + lg.id + '/picks').then(function(pData) { return { league: lg, picks: pData.picks || [] }; }).catch(function() { return { league: lg, picks: [] }; }));
+    });
+    Promise.all(allDone).then(function(results) {
+      var html = '';
+      results.forEach(function(r) {
+        if (r.picks.length === 0) return;
+        html += '<div style="margin-bottom:16px;"><div style="font-weight:600;font-size:14px;margin-bottom:8px;">' + r.league.name + '</div><div class="picks-grid">';
+        r.picks.forEach(function(p) {
+          var rc = (p.return_pct||0) >= 0 ? 'positive' : 'negative';
+          var retStr = ((p.return_pct||0) >= 0 ? '+' : '') + (p.return_pct||0).toFixed(2) + '%';
+          html += '<div class="pick-card"><div><div class="pick-ticker">' + p.symbol + '</div><div class="pick-name">' + (p.name||'') + '</div><div class="pick-price">Entry: $' + (p.entry_price||0).toFixed(2) + '</div>';
+          if (p.added_at) { html += '<div style="font-size:10px;color:var(--gray-dark);margin-top:2px;">Locked: ' + formatDateTime(p.added_at) + '</div>'; }
+          html += '</div><div style="text-align:right;"><div class="mono ' + rc + '">' + retStr + '</div></div></div>';
+        });
+        html += '</div></div>';
+      });
+      if (html) { document.getElementById('leaguePicksCard').style.display = 'block'; document.getElementById('leaguePicksMyTab').innerHTML = html; }
+      else { document.getElementById('leaguePicksCard').style.display = 'none'; }
+    });
+  }).catch(function() {});
+}
 function renderCompetitionBanner() {
   var c = activeCompetition;
   document.getElementById('compName').textContent = c.name + ' Competition';
