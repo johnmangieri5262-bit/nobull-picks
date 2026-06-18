@@ -74,44 +74,48 @@ function sleep(ms) { return new Promise(function(r) { setTimeout(r, ms); }); }
 async function fetchPrices() {
   console.log('[' + new Date().toISOString() + '] Starting price fetch...');
 
-  var symbols = db.prepare(
-    "SELECT DISTINCT p.symbol, p.type FROM picks p JOIN competitions c ON c.id = p.competition_id WHERE c.status IN ('drafting', 'active')"
+  // Get ALL unique symbols from both picks and league_picks
+  var mainSymbols = db.prepare(
+    "SELECT DISTINCT symbol, type FROM picks WHERE entry_price > 0"
   ).all();
 
-  if (symbols.length === 0) { console.log('No active picks to update.'); return; }
-  console.log('Fetching prices for ' + symbols.length + ' symbols...');
+  var leagueSymbols = db.prepare(
+    "SELECT DISTINCT symbol, type FROM league_picks WHERE entry_price > 0"
+  ).all();
+
+  // Merge into one unique list
+  var symbolMap = {};
+  mainSymbols.forEach(function(s) { symbolMap[s.symbol] = s.type; });
+  leagueSymbols.forEach(function(s) { if (!symbolMap[s.symbol]) symbolMap[s.symbol] = s.type; });
+
+  var allSymbols = Object.keys(symbolMap);
+  if (allSymbols.length === 0) { console.log('No picks to update.'); return; }
+  console.log('Fetching prices for ' + allSymbols.length + ' symbols...');
 
   var updated = 0, failed = 0;
-  for (var i = 0; i < symbols.length; i++) {
-    var sym = symbols[i].symbol, typ = symbols[i].type;
+  for (var i = 0; i < allSymbols.length; i++) {
+    var sym = allSymbols[i];
+    var typ = symbolMap[sym];
     try {
       var price = await getPrice(sym, typ);
-      db.prepare('UPDATE picks SET current_price = ? WHERE symbol = ?').run(price, sym);
-      db.prepare('UPDATE picks SET return_pct = ROUND(((? - entry_price) / entry_price) * 100, 2) WHERE symbol = ? AND locked = 1 AND entry_price > 0').run(price, sym);
+
+      // Update BOTH tables with one price fetch
+      db.prepare('UPDATE picks SET current_price = ?, return_pct = ROUND(((? - entry_price) / entry_price) * 100, 2) WHERE symbol = ? AND entry_price > 0').run(price, price, sym);
+      db.prepare('UPDATE league_picks SET current_price = ?, return_pct = ROUND(((? - entry_price) / entry_price) * 100, 2) WHERE symbol = ? AND entry_price > 0').run(price, price, sym);
+
+      // Also fill pending picks (entry_price = 0)
+      db.prepare('UPDATE picks SET entry_price = ?, current_price = ? WHERE symbol = ? AND (entry_price = 0 OR entry_price IS NULL)').run(price, price, sym);
+      db.prepare('UPDATE league_picks SET entry_price = ?, current_price = ? WHERE symbol = ? AND (entry_price = 0 OR entry_price IS NULL)').run(price, price, sym);
+
       db.prepare('INSERT INTO price_history (symbol, price) VALUES (?, ?)').run(sym, price);
       updated++;
       console.log('  ' + sym + ': $' + price.toFixed(2));
       await sleep(1200);
     } catch (err) {
-      console.error('  Error: ' + sym + ': ' + err.message);
+      console.error('  FAILED ' + sym + ': ' + err.message);
       failed++;
       await sleep(500);
     }
-  }
-
-  // Also update league picks
-  var leagueSymbols = db.prepare(
-    "SELECT DISTINCT symbol, type FROM league_picks"
-  ).all();
-
-  for (var j = 0; j < leagueSymbols.length; j++) {
-    var s = leagueSymbols[j].symbol, t = leagueSymbols[j].type;
-    try {
-      var p = await getPrice(s, t);
-      db.prepare('UPDATE league_picks SET current_price = ? WHERE symbol = ?').run(p, s);
-      db.prepare('UPDATE league_picks SET return_pct = ROUND(((? - entry_price) / entry_price) * 100, 2) WHERE symbol = ? AND entry_price > 0').run(p, s);
-      await sleep(1200);
-    } catch (err) { await sleep(500); }
   }
 
   console.log('Done. Updated: ' + updated + ', Failed: ' + failed);
