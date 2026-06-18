@@ -101,7 +101,7 @@ async function fetchPrices() {
 
   // Also update league picks
   var leagueSymbols = db.prepare(
-    "SELECT DISTINCT lp.symbol, lp.type FROM league_picks lp JOIN leagues l ON l.id = lp.league_id WHERE l.start_date <= date('now') AND l.end_date >= date('now')"
+    "SELECT DISTINCT symbol, type FROM league_picks"
   ).all();
 
   for (var j = 0; j < leagueSymbols.length; j++) {
