@@ -603,7 +603,10 @@ function formatDate(dateStr) {
 
 function formatDateTime(dt) {
   if (!dt) return '';
-  var d = new Date(dt + 'Z');
+  var str = dt.toString().replace(' ', 'T');
+  if (str.indexOf('Z') === -1 && str.indexOf('+') === -1) str += 'Z';
+  var d = new Date(str);
+  if (isNaN(d.getTime())) return '';
   var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   var h = d.getHours(); var m = d.getMinutes();
   var ampm = h >= 12 ? 'PM' : 'AM';
