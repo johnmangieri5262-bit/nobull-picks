@@ -135,6 +135,16 @@ app.get('/api/admin/wipe-test-data', (req, res) => {
   res.json({ message: 'All picks, leagues, and price history wiped. Users kept.' });
 });
 // TEMPORARY: Wipe test data (remove after testing)
+app.post('/api/admin/reset-pw', (req, res) => {
+  var username = req.body.username;
+  var newPw = req.body.new_pw;
+  if (!username || !newPw) return res.status(400).json({ error: 'username and new_pw required' });
+  var bcrypt = require('bcrypt');
+  var hash = bcrypt.hashSync(newPw, 10);
+  var result = db.prepare('UPDATE users SET password_hash = ? WHERE username = ?').run(hash, username);
+  if (result.changes === 0) return res.status(404).json({ error: 'User not found' });
+  res.json({ message: 'Code reset for ' + username });
+});
 app.get('/api/wipe-nobull-2026', (req, res) => {
   db.prepare('DELETE FROM picks').run();
   db.prepare('DELETE FROM league_picks').run();
