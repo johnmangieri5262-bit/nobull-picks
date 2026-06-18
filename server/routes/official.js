@@ -14,8 +14,8 @@ var OFFICIAL_PICKS = [
   { symbol: 'TJX', name: 'TJX Companies', type: 'stock' }
 ];
 
-var ENTRY_PRICES = {};
-var pricesLocked = false;
+var ENTRY_PRICES = { 'AMZN': 245.34, 'CEG': 277.34, 'MSFT': 380.26, 'NVDA': 210.32, 'TSM': 458.03, 'TJX': 164.77 };
+var pricesLocked = true;
 
 function getFinnhubPrice(symbol) {
   return new Promise(function(resolve, reject) {
@@ -64,7 +64,7 @@ router.get('/', async function(req, res) {
         entry_price: entryPrice,
         current_price: currentPrice,
                return_pct: Math.round(returnPct * 100) / 100,
-        added_at: '2026-06-11T14:00:00'
+        added_at: '2026-06-18T17:30:00'
       });
 
       if (i < OFFICIAL_PICKS.length - 1) await sleep(300);
