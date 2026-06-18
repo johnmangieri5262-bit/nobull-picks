@@ -204,7 +204,7 @@ cron.schedule('0 * * * *', () => {
 });
 
 // Fetch prices on a schedule
-const priceCron = process.env.PRICE_CRON || '*/5 9-16 * * 1-5';
+const priceCron = process.env.PRICE_CRON || '*/5 13-21 * * 1-5';
 cron.schedule(priceCron, () => {
   fetchPrices().then(() => {
     const activeComps = db.prepare("SELECT id FROM competitions WHERE status = 'active'").all();
