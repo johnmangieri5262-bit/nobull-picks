@@ -729,6 +729,22 @@ function viewLeague(leagueId) {
   api('GET', '/leagues/' + leagueId).then(function(data) { document.getElementById('leagueDetailName').textContent = data.league.name; document.getElementById('leagueDetailInfo').textContent = data.league.start_date + ' to ' + data.league.end_date + ' | ' + data.members.length + '/' + data.league.max_players + ' players'; });
 tbody.innerHTML += '<tr style="cursor:pointer;" onclick="viewPlayerPicks(' + leagueId + ',' + p.id + ')"><td class="rank rank-' + p.rank + '">' + p.rank + '</td><td>' + p.display_name + '</td><td>' + p.pick_count + '</td><td class="mono ' + rc + '">' + (p.avg_return >= 0 ? '+' : '') + p.avg_return + '%</td></tr>';  loadLeaguePicks(leagueId);
 }
+  function viewPlayerPicks(leagueId, userId) {
+  api('GET', '/leagues/' + leagueId + '/picks/player/' + userId).then(function(data) {
+    var container = document.getElementById('leaguePicksList');
+    var html = '<div style="margin-bottom:12px;font-weight:600;font-size:14px;">' + data.player_name + '\'s Picks</div><div class="picks-grid">';
+    if (data.picks.length === 0) { html += '<p style="color:var(--gray);">No picks yet.</p>'; }
+    data.picks.forEach(function(p) {
+      var rc = (p.return_pct||0) >= 0 ? 'positive' : 'negative';
+      var retStr = ((p.return_pct||0) >= 0 ? '+' : '') + (p.return_pct||0).toFixed(2) + '%';
+      html += '<div class="pick-card"><div><div class="pick-ticker">' + p.symbol + '</div><div class="pick-name">' + (p.name||'') + '</div><div class="pick-price">Entry: $' + (p.entry_price||0).toFixed(2) + '</div>';
+      if (p.added_at) { html += '<div style="font-size:10px;color:var(--gray-dark);margin-top:2px;">Locked: ' + formatDateTime(p.added_at) + '</div>'; }
+      html += '</div><div style="text-align:right;"><div class="mono ' + rc + '">' + retStr + '</div></div></div>';
+    });
+    html += '</div>';
+    container.innerHTML = html;
+  }).catch(function(err) { showToast(err.message, true); });
+}
 function loadLeaguePicks(leagueId) {
   api('GET', '/leagues/' + leagueId + '/picks').then(function(data) {
     var container = document.getElementById('leaguePicksList');
