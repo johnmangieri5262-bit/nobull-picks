@@ -9,7 +9,7 @@ var OFFICIAL_PICKS = [
   { symbol: 'V', name: 'Visa Inc.', type: 'stock' }
 ];
 
-var ENTRY_PRICES = { 'V': 333.44 };
+var ENTRY_PRICES = { 'V': 328.50 };
 var pricesLocked = true;
 
 function getFinnhubPrice(symbol) {
