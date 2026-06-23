@@ -6,12 +6,8 @@ const https = require('https');
 var FINNHUB_KEY = 'd8bh339r01qu2eqh9rkgd8bh339r01qu2eqh9rl0';
 
 var OFFICIAL_PICKS = [
-  { symbol: 'AMZN', name: 'Amazon.com Inc.', type: 'stock' },
-  { symbol: 'CEG', name: 'Constellation Energy', type: 'stock' },
-  { symbol: 'MSFT', name: 'Microsoft Corp.', type: 'stock' },
-  { symbol: 'NVDA', name: 'NVIDIA Corp.', type: 'stock' },
-  { symbol: 'TSM', name: 'Taiwan Semiconductor', type: 'stock' },
-  { symbol: 'TJX', name: 'TJX Companies', type: 'stock' }
+var OFFICIAL_PICKS = [
+  { symbol: 'V', name: 'Visa Inc.', type: 'stock' }
 ];
 
 var ENTRY_PRICES = { 'AMZN': 245.34, 'CEG': 277.34, 'MSFT': 380.26, 'NVDA': 210.32, 'TSM': 458.03, 'TJX': 164.77 };
