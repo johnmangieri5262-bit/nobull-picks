@@ -131,7 +131,18 @@ router.post('/join', async function(req, res) {
     res.status(500).json({ error: 'Server error' });
   }
 });
-
+// GET /api/leagues/:id/picks/player/:userId — view another player's picks (only after league starts)
+router.get('/:id/picks/player/:userId', function(req, res) {
+  var league = db.prepare('SELECT * FROM leagues WHERE id = ?').get(parseInt(req.params.id));
+  if (!league) return res.status(404).json({ error: 'League not found' });
+  var status = getLeagueStatus(league.start_date, league.end_date);
+  if (status === 'upcoming') return res.status(403).json({ error: 'Picks are hidden until the league starts' });
+  var member = db.prepare('SELECT id FROM league_members WHERE league_id = ? AND user_id = ?').get(parseInt(req.params.id), req.user.id);
+  if (!member) return res.status(403).json({ error: 'Not a member of this league' });
+  var picks = db.prepare('SELECT * FROM league_picks WHERE league_id = ? AND user_id = ? ORDER BY id DESC').all(parseInt(req.params.id), parseInt(req.params.userId));
+  var player = db.prepare('SELECT display_name FROM users WHERE id = ?').get(parseInt(req.params.userId));
+  res.json({ picks: picks, player_name: player ? player.display_name : 'Unknown' });
+});
 // GET /api/leagues
 router.get('/', function(req, res) {
   var leagues = db.prepare('SELECT l.*, (SELECT COUNT(*) FROM league_members WHERE league_id = l.id) as player_count FROM leagues l JOIN league_members lm ON lm.league_id = l.id WHERE lm.user_id = ? ORDER BY l.id DESC').all(req.user.id);
