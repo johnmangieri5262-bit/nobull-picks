@@ -6,7 +6,6 @@ const https = require('https');
 var FINNHUB_KEY = 'd8bh339r01qu2eqh9rkgd8bh339r01qu2eqh9rl0';
 
 var OFFICIAL_PICKS = [
-var OFFICIAL_PICKS = [
   { symbol: 'V', name: 'Visa Inc.', type: 'stock' }
 ];
 
@@ -43,7 +42,6 @@ router.get('/', async function(req, res) {
       var currentPrice = await getFinnhubPrice(pick.symbol);
       var entryPrice = ENTRY_PRICES[pick.symbol] || currentPrice;
 
-      // Lock entry prices on first successful fetch
       if (!ENTRY_PRICES[pick.symbol] && currentPrice > 0) {
         ENTRY_PRICES[pick.symbol] = currentPrice;
       }
@@ -59,8 +57,8 @@ router.get('/', async function(req, res) {
         type: pick.type,
         entry_price: entryPrice,
         current_price: currentPrice,
-               return_pct: Math.round(returnPct * 100) / 100,
-        added_at: '2026-06-18T17:30:00'
+        return_pct: Math.round(returnPct * 100) / 100,
+        added_at: '2026-06-23T19:15:00'
       });
 
       if (i < OFFICIAL_PICKS.length - 1) await sleep(300);
