@@ -10,7 +10,7 @@ var OFFICIAL_PICKS = [
   { symbol: 'V', name: 'Visa Inc.', type: 'stock' }
 ];
 
-var ENTRY_PRICES = { 'AMZN': 245.34, 'CEG': 277.34, 'MSFT': 380.26, 'NVDA': 210.32, 'TSM': 458.03, 'TJX': 164.77 };
+var ENTRY_PRICES = { 'V': 333.44 };
 var pricesLocked = true;
 
 function getFinnhubPrice(symbol) {
