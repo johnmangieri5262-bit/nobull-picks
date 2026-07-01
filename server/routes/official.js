@@ -59,8 +59,7 @@ router.get('/', async function(req, res) {
         entry_price: entryPrice,
         current_price: currentPrice,
         return_pct: Math.round(returnPct * 100) / 100,
-        added_at: '2026-06-23T19:15:00'
-      });
+        added_at: pick.symbol === 'V' ? '2026-06-23T19:15:00' : '2026-07-01T13:54:00'      });
 
       if (i < OFFICIAL_PICKS.length - 1) await sleep(300);
     }
