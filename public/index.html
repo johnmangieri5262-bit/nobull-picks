@@ -727,7 +727,8 @@ function joinLeague() {
 function viewLeague(leagueId) {
   activeLeague = leagueId; document.getElementById('leagueDetail').style.display = 'block';
   api('GET', '/leagues/' + leagueId).then(function(data) { document.getElementById('leagueDetailName').textContent = data.league.name; document.getElementById('leagueDetailInfo').textContent = data.league.start_date + ' to ' + data.league.end_date + ' | ' + data.members.length + '/' + data.league.max_players + ' players'; });
-tbody.innerHTML += '<tr style="cursor:pointer;" onclick="viewPlayerPicks(' + leagueId + ',' + p.id + ')"><td class="rank rank-' + p.rank + '">' + p.rank + '</td><td>' + p.display_name + '</td><td>' + p.pick_count + '</td><td class="mono ' + rc + '">' + (p.avg_return >= 0 ? '+' : '') + p.avg_return + '%</td></tr>';  loadLeaguePicks(leagueId);
+  api('GET', '/leagues/' + leagueId + '/leaderboard').then(function(data) { var tbody = document.querySelector('#leagueLeaderboardTable tbody'); tbody.innerHTML = ''; data.leaderboard.forEach(function(p) { var rc = p.avg_return >= 0 ? 'positive' : 'negative'; tbody.innerHTML += '<tr style="cursor:pointer;" onclick="viewPlayerPicks(' + leagueId + ',' + p.id + ')"><td class="rank rank-' + p.rank + '">' + p.rank + '</td><td>' + p.display_name + '</td><td>' + p.pick_count + '</td><td class="mono ' + rc + '">' + (p.avg_return >= 0 ? '+' : '') + p.avg_return + '%</td></tr>'; }); });
+  loadLeaguePicks(leagueId);
 }
   function viewPlayerPicks(leagueId, userId) {
   api('GET', '/leagues/' + leagueId + '/picks/player/' + userId).then(function(data) {
