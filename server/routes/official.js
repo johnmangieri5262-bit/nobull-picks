@@ -7,10 +7,11 @@ var FINNHUB_KEY = 'd8bh339r01qu2eqh9rkgd8bh339r01qu2eqh9rl0';
 
 var OFFICIAL_PICKS = [
   { symbol: 'V', name: 'Visa Inc.', type: 'stock' },
-  { symbol: 'AMZN', name: 'Amazon.com Inc.', type: 'stock' }
+  { symbol: 'AMZN', name: 'Amazon.com Inc.', type: 'stock' },
+  { symbol: 'CEG', name: 'Constellation Energy', type: 'stock' }
 ];
 
-var ENTRY_PRICES = { 'V': 328.50, 'AMZN': 237.53 };
+var ENTRY_PRICES = { 'V': 328.50, 'AMZN': 237.53, 'CEG': 271.64 };
 var pricesLocked = true;
 
 function getFinnhubPrice(symbol) {
