@@ -11,7 +11,7 @@ var OFFICIAL_PICKS = [
   { symbol: 'CEG', name: 'Constellation Energy', type: 'stock' }
 ];
 
-var ENTRY_PRICES = { 'V': 328.50, 'AMZN': 237.53, 'CEG': 271.64 };
+var ENTRY_PRICES = { 'V': 328.50, 'AMZN': 237.53, 'CEG': 240.63 };
 var pricesLocked = true;
 
 function getFinnhubPrice(symbol) {
