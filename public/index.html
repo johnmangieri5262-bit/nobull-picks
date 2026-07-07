@@ -775,6 +775,7 @@ function renderOfficialPicks(data) {
   var avgStr = (data.avg_return >= 0 ? '+' : '') + data.avg_return.toFixed(2) + '%';
   document.getElementById('officialAvgReturn').textContent = avgStr;
   document.getElementById('officialAvgReturn').className = 'days ' + avgClass;
+  document.getElementById('officialStatus').textContent = data.pick_count + ' Picks Active';
   var best = data.picks[0], worst = data.picks[0];
   for (var i = 1; i < data.picks.length; i++) { if (data.picks[i].return_pct > best.return_pct) best = data.picks[i]; if (data.picks[i].return_pct < worst.return_pct) worst = data.picks[i]; }
   var summary = document.getElementById('officialSummary');
