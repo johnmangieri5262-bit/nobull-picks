@@ -8,8 +8,12 @@ var FINNHUB_KEY = 'd8bh339r01qu2eqh9rkgd8bh339r01qu2eqh9rl0';
 var OFFICIAL_PICKS = [
   { symbol: 'V', name: 'Visa Inc.', type: 'stock' },
   { symbol: 'AMZN', name: 'Amazon.com Inc.', type: 'stock' },
-  { symbol: 'CEG', name: 'Constellation Energy', type: 'stock' }
+  { symbol: 'CEG', name: 'Constellation Energy', type: 'stock' },
+  { symbol: 'NVDA', name: 'NVIDIA Corp.', type: 'stock' },
+  { symbol: 'BRK-B', name: 'Berkshire Hathaway', type: 'stock' }
 ];
+
+var ENTRY_PRICES = { 'V': 328.50, 'AMZN': 237.53, 'CEG': 271.64, 'NVDA': 206.40, 'BRK-B': 489.83 };
 
 var ENTRY_PRICES = { 'V': 328.50, 'AMZN': 237.53, 'CEG': 240.63 };
 var pricesLocked = true;
@@ -60,8 +64,7 @@ router.get('/', async function(req, res) {
         entry_price: entryPrice,
         current_price: currentPrice,
         return_pct: Math.round(returnPct * 100) / 100,
-                added_at: pick.symbol === 'V' ? '2026-06-23T19:15:00' : pick.symbol === 'AMZN' ? '2026-07-01T13:54:00' : '2026-07-07T13:55:00'      });
-
+        added_at: pick.symbol === 'V' ? '2026-06-23T19:15:00' : pick.symbol === 'AMZN' ? '2026-07-01T13:54:00' : pick.symbol === 'CEG' ? '2026-07-07T13:55:00' : '2026-07-21T13:00:00'
       if (i < OFFICIAL_PICKS.length - 1) await sleep(300);
     }
 
