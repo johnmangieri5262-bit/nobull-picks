@@ -13,7 +13,7 @@ var OFFICIAL_PICKS = [
   { symbol: 'BRK-B', name: 'Berkshire Hathaway', type: 'stock', locked: '2026-07-21T13:00:00' }
 ];
 
-var ENTRY_PRICES = { 'V': 328.50, 'AMZN': 237.53, 'CEG': 271.64, 'NVDA': 206.40, 'BRK-B': 489.83 };
+var ENTRY_PRICES = { 'V': 328.50, 'AMZN': 237.53, 'CEG': 239.00, 'NVDA': 206.40, 'BRK-B': 489.83 };
 var pricesLocked = true;
 
 function getFinnhubPrice(symbol) {
