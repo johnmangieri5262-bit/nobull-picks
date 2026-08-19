@@ -13,10 +13,11 @@ var OFFICIAL_PICKS = [
   { symbol: 'BRK-B', name: 'Berkshire Hathaway', type: 'stock', locked: '2026-07-21T13:00:00' },
   { symbol: 'TSM', name: 'Taiwan Semiconductor', type: 'stock', locked: '2026-08-04T19:15:00' },
   { symbol: 'TT', name: 'Trane Technologies', type: 'stock', locked: '2026-08-04T19:15:00' },
-  { symbol: 'COIN', name: 'Coinbase Global', type: 'stock', locked: '2026-08-12T19:15:00' }
+  { symbol: 'COIN', name: 'Coinbase Global', type: 'stock', locked: '2026-08-12T19:15:00' },
+  { symbol: 'PLNT', name: 'Planet Fitness', type: 'stock', locked: '2026-08-19T19:15:00' }
 ];
 
-var ENTRY_PRICES = { 'V': 328.50, 'AMZN': 237.53, 'CEG': 239.00, 'NVDA': 206.40, 'BRK-B': 489.83, 'TSM': 419.27, 'TT': 472.24, 'COIN': 149.72 };
+var ENTRY_PRICES = { 'V': 328.50, 'AMZN': 237.53, 'CEG': 239.00, 'NVDA': 206.40, 'BRK-B': 489.83, 'TSM': 419.27, 'TT': 472.24, 'COIN': 149.72, 'PLNT': 52.73 };
 var pricesLocked = true;
 
 function getFinnhubPrice(symbol) {
