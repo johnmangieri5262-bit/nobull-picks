@@ -16,10 +16,11 @@ var OFFICIAL_PICKS = [
   { symbol: 'COIN', name: 'Coinbase Global', type: 'stock', locked: '2026-08-12T19:15:00' },
   { symbol: 'PLNT', name: 'Planet Fitness', type: 'stock', locked: '2026-08-19T19:15:00' },
   { symbol: 'CEG', name: 'Constellation Energy', type: 'stock', locked: '2026-08-25T19:15:00' },
-  { symbol: 'WMT', name: 'Walmart Inc.', type: 'stock', locked: '2026-09-02T19:15:00' }
+  { symbol: 'WMT', name: 'Walmart Inc.', type: 'stock', locked: '2026-09-02T19:15:00' },
+  { symbol: 'AMZN', name: 'Amazon.com Inc.', type: 'stock', locked: '2026-09-09T19:15:00' }
 ];
 
-var ENTRY_PRICES_LIST = [328.50, 237.53, 239.00, 206.40, 489.83, 419.27, 472.24, 149.72, 52.73, 277.35, 105.97];
+var ENTRY_PRICES_LIST = [328.50, 237.53, 239.00, 206.40, 489.83, 419.27, 472.24, 149.72, 52.73, 277.35, 105.97, 252.15];
 var pricesLocked = true;
 
 function getFinnhubPrice(symbol) {
