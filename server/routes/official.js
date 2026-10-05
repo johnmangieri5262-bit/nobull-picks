@@ -21,7 +21,7 @@ var OFFICIAL_PICKS = [
   { symbol: 'AMZN', name: 'Amazon.com Inc.', type: 'stock', locked: '2026-09-09T19:15:00' },
   { symbol: 'AMD', name: 'Advanced Micro Devices', type: 'stock', locked: '2026-09-16T13:30:00' },
   { symbol: 'MU', name: 'Micron Technology', type: 'stock', locked: '2026-09-23T19:15:00' }
-];
+]; 
 
 var ENTRY_PRICES_LIST = [328.50, 237.53, 239.00, 206.40, 489.83, 419.27, 472.24, 149.72, 52.73, 277.35, 105.97, 252.15, 519.00, 10767.76];
 var pricesLocked = true;
