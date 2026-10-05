@@ -5,6 +5,7 @@ const https = require('https');
 
 var FINNHUB_KEY = 'd8bh339r01qu2eqh9rkgd8bh339r01qu2eqh9rl0';
 
+JavaScript
 var OFFICIAL_PICKS = [
   { symbol: 'V', name: 'Visa Inc.', type: 'stock', locked: '2026-06-23T19:15:00' },
   { symbol: 'AMZN', name: 'Amazon.com Inc.', type: 'stock', locked: '2026-07-01T13:54:00' },
@@ -18,10 +19,11 @@ var OFFICIAL_PICKS = [
   { symbol: 'CEG', name: 'Constellation Energy', type: 'stock', locked: '2026-08-25T19:15:00' },
   { symbol: 'WMT', name: 'Walmart Inc.', type: 'stock', locked: '2026-09-02T19:15:00' },
   { symbol: 'AMZN', name: 'Amazon.com Inc.', type: 'stock', locked: '2026-09-09T19:15:00' },
-  { symbol: 'AMD', name: 'Advanced Micro Devices', type: 'stock', locked: '2026-09-16T13:30:00' }
+  { symbol: 'AMD', name: 'Advanced Micro Devices', type: 'stock', locked: '2026-09-16T13:30:00' },
+  { symbol: 'MU', name: 'Micron Technology', type: 'stock', locked: '2026-09-23T19:15:00' }
 ];
 
-var ENTRY_PRICES_LIST = [328.50, 237.53, 239.00, 206.40, 489.83, 419.27, 472.24, 149.72, 52.73, 277.35, 105.97, 252.15, 519.00];
+var ENTRY_PRICES_LIST = [328.50, 237.53, 239.00, 206.40, 489.83, 419.27, 472.24, 149.72, 52.73, 277.35, 105.97, 252.15, 519.00, 10767.76];
 var pricesLocked = true;
 
 function getFinnhubPrice(symbol) {
