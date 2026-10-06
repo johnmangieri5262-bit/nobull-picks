@@ -5,7 +5,7 @@ const https = require('https');
 
 var FINNHUB_KEY = 'd8bh339r01qu2eqh9rkgd8bh339r01qu2eqh9rl0';
 
-JavaScript
+
 var OFFICIAL_PICKS = [
   { symbol: 'V', name: 'Visa Inc.', type: 'stock', locked: '2026-06-23T19:15:00' },
   { symbol: 'AMZN', name: 'Amazon.com Inc.', type: 'stock', locked: '2026-07-01T13:54:00' },
