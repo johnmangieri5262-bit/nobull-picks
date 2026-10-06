@@ -23,7 +23,7 @@ var OFFICIAL_PICKS = [
   { symbol: 'MU', name: 'Micron Technology', type: 'stock', locked: '2026-09-23T19:15:00' }
 ]; 
 
-var ENTRY_PRICES_LIST = [328.50, 237.53, 239.00, 206.40, 489.83, 419.27, 472.24, 149.72, 52.73, 277.35, 105.97, 252.15, 519.00, 10767.76];
+var ENTRY_PRICES_LIST = [328.50, 237.53, 239.00, 206.40, 489.83, 419.27, 472.24, 149.72, 52.73, 277.35, 105.97, 252.15, 519.00, 1076.76];
 var pricesLocked = true;
 
 function getFinnhubPrice(symbol) {
