@@ -20,16 +20,16 @@ var OFFICIAL_PICKS = [
   { symbol: 'AMZN', name: 'Amazon.com Inc.', type: 'stock', locked: '2026-09-09T19:15:00' },
   { symbol: 'AMD', name: 'Advanced Micro Devices', type: 'stock', locked: '2026-09-16T13:30:00' },
   { symbol: 'MU', name: 'Micron Technology', type: 'stock', locked: '2026-09-23T19:15:00' },
+  { symbol: 'MSI', name: 'Motorola Solutions, Inc.', type: 'stock', locked: '2026-10-07T19:15:00' },
   { symbol: 'CAT', name: 'Caterpillar Inc.', type: 'stock', locked: '2026-10-14T09:42:00' }
 ]; 
 
 var ENTRY_PRICES_LIST = [
   328.50, 237.53, 239.00, 206.40, 489.83, 419.27, 472.24, 
   149.72, 52.73, 277.35, 105.97, 252.15, 519.00, 1076.76, 
-  765.22
+  448.28, 765.22
 ];
 var pricesLocked = true;
-
 function getFinnhubPrice(symbol) {
   return new Promise(function(resolve, reject) {
     var parts = ['https://finnhub.io/api/v1/quote?symbol=', encodeURIComponent(symbol), String.fromCharCode(38), 'tok', 'en=', FINNHUB_KEY];
