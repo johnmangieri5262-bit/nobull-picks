@@ -31,3 +31,5 @@ var ENTRY_PRICES_LIST = [
   448.28, 765.22, 342.65, 225.00
 ];
 var pricesLocked = true;
+
+module.exports = router;
